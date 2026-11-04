@@ -19,8 +19,9 @@ Tiempo estimado: 1 a 2 horas, sobre todo por las descargas.
 
 ### 1. Instalar Git
 ```powershell
-winget install --id Git.Git -e
+winget install --id Git.Git -e --source winget
 ```
+(Si `winget` pide aceptar contratos, escribe `S` y Enter. Algunas instalaciones piden permiso de administrador: acéptalo.)
 Cierra y abre PowerShell y configura tu identidad (usa el correo de tu cuenta de GitHub):
 ```powershell
 git config --global user.name "Tu Nombre"
@@ -29,24 +30,27 @@ git config --global user.email "tu_correo@ejemplo.com"
 
 ### 2. Instalar Visual Studio Code
 ```powershell
-winget install --id Microsoft.VisualStudioCode -e
+winget install --id Microsoft.VisualStudioCode -e --source winget
 ```
 Extensiones recomendadas (pestaña Extensiones): **Flutter** (instala también Dart),
 y opcionalmente **Supabase** / **SQL Formatter**.
 
 ### 3. Instalar Node.js (LTS)
 ```powershell
-winget install --id OpenJS.NodeJS.LTS -e
+winget install --id OpenJS.NodeJS.LTS -e --source winget
 ```
 Verifica en una terminal nueva: `node --version` y `npm --version`.
 
 ### 4. Instalar Docker Desktop
 ```powershell
-winget install --id Docker.DockerDesktop -e
+winget install --id Docker.DockerDesktop -e --source winget
 ```
-Reinicia el equipo si lo pide, **abre Docker Desktop** y espera a que indique que
-está corriendo (ícono de ballena estable). Si pide WSL 2, acepta la instalación.
-Debe estar abierto siempre que uses Supabase local. Verifica:
+Reinicia el equipo si lo pide, **abre Docker Desktop**, acepta sus términos de uso y espera a que
+indique que está corriendo (ícono de ballena estable). Si pide WSL 2, acepta la instalación.
+Debe estar abierto siempre que uses Supabase local.
+Si Docker dice que la **virtualización está deshabilitada**, hay que activarla en la BIOS del equipo
+(opción "Intel Virtualization Technology" / "SVM Mode"); es un ajuste propio de cada laptop.
+Verifica:
 ```powershell
 docker info --format "{{.ServerVersion}}"
 ```
@@ -54,8 +58,9 @@ docker info --format "{{.ServerVersion}}"
 ### 5. Instalar Visual Studio Build Tools (compilar para Windows)
 Flutter necesita las herramientas de C++ para compilar apps de escritorio.
 ```powershell
-winget install --id Microsoft.VisualStudio.2022.BuildTools -e --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+winget install --id Microsoft.VisualStudio.2022.BuildTools -e --source winget --override "--passive --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 ```
+Pide permiso de administrador y tarda varios minutos (descarga varios GB). Si te pide reiniciar, hazlo.
 (Alternativa: instalar Visual Studio 2022 Community y marcar la carga de trabajo
 **Desarrollo para el escritorio con C++**.)
 
@@ -96,6 +101,11 @@ code .
 ```
 (Puedes clonarlo en otra ruta; evita carpetas dentro de OneDrive.)
 La primera vez que hagas `git clone`/`push`, se abrirá el navegador para iniciar sesión en GitHub.
+Si es la primera vez que trabajas con el repo, **cámbiate a tu rama personal** (ver "Colaboración con Git"):
+```powershell
+git checkout David
+```
+(Cambia `David` por tu rama. Si todavía no existe en tu copia, usa antes `git fetch`.)
 
 ### 10. Instalar dependencias
 ```powershell
@@ -128,7 +138,9 @@ El script lee la URL y la anon key de `npx supabase status` y ejecuta
 `flutter run -d windows` con `--dart-define`. Debe abrirse la pantalla **Iniciar Sesión** (la misma para meseros, chefs, gerentes y clientes).
 Entra con un usuario de prueba (ver `supabase/seed.sql`; por ejemplo el del mesero) y deberías ver la
 **Comandería y Mesas** con pedidos de ejemplo. El gerente además ve las pestañas Cocina y Gerencia.
-Los clientes se registran desde "Crear cuenta". Zoom: Ctrl + / Ctrl − / Ctrl 0 o los botones del encabezado. Eso confirma que Flutter, Riverpod, Supabase Auth, las migraciones y RLS funcionan.
+Los clientes se registran desde "Crear cuenta". Zoom: Ctrl + / Ctrl − / Ctrl 0 o los botones del encabezado.
+Eso confirma que Flutter, Riverpod, Supabase Auth, las migraciones y RLS funcionan.
+La **primera compilación** de Flutter para Windows tarda varios minutos; las siguientes son rápidas.
 Si ves "No se pudieron cargar los pedidos", revisa que Supabase esté corriendo
 (`npx supabase status`) y que las migraciones y el seed estén aplicados (`npx supabase db reset`).
 
