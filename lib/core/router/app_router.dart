@@ -9,7 +9,9 @@ import '../../data/repository_providers.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/registro_screen.dart';
 import '../../features/gerencia/gerencia_screen.dart';
+import '../../domain/entities/perfil.dart';
 import '../../features/home/inicio_screen.dart';
+import '../../features/pedidos/comanda/pedido_form_screen.dart';
 import '../../features/shell/shell_autenticado.dart';
 import '../../presentation/widgets/en_construccion.dart';
 import 'destinos.dart';
@@ -29,6 +31,9 @@ class _RefrescoPorStream extends ChangeNotifier {
     super.dispose();
   }
 }
+
+/// Quién puede crear/editar pedidos (el chef no).
+const _rolesDePedido = {RolUsuario.mesero, RolUsuario.gerente, RolUsuario.cliente};
 
 /// Rutas públicas (sin sesión).
 const _rutasPublicas = {'/login', '/registro'};
@@ -51,6 +56,18 @@ GoRouter appRouter(Ref ref) {
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(path: '/registro', builder: (_, _) => const RegistroScreen()),
+      // Pantalla completa de comanda (sin encabezado general): crear, editar y pedido del cliente.
+      GoRoute(
+        path: '/pedido/nuevo',
+        builder: (_, _) => const AccesoRoles(roles: _rolesDePedido, child: PedidoFormScreen()),
+      ),
+      GoRoute(
+        path: '/pedido/:folio/editar',
+        builder: (_, state) => AccesoRoles(
+          roles: _rolesDePedido,
+          child: PedidoFormScreen(folio: int.tryParse(state.pathParameters['folio'] ?? '')),
+        ),
+      ),
       ShellRoute(
         builder: (context, state, child) =>
             ShellAutenticado(ubicacion: state.uri.path, child: child),

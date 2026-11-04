@@ -14,6 +14,8 @@ Future<void> abrirApp(
   FakeAuthRepository? auth,
   FakePedidoRepository? pedidos,
   FakeEmpleadoRepository? empleados,
+  FakeMenuRepository? menu,
+  FakeMesaRepository? mesas,
   Size ventana = const Size(1400, 900),
 }) async {
   SharedPreferences.setMockInitialValues({});
@@ -27,6 +29,8 @@ Future<void> abrirApp(
       authRepositoryProvider.overrideWithValue(auth ?? FakeAuthRepository()),
       pedidoRepositoryProvider.overrideWithValue(pedidos ?? FakePedidoRepository([])),
       empleadoRepositoryProvider.overrideWithValue(empleados ?? FakeEmpleadoRepository()),
+      menuRepositoryProvider.overrideWithValue(menu ?? FakeMenuRepository()),
+      mesaRepositoryProvider.overrideWithValue(mesas ?? FakeMesaRepository()),
       relojProvider.overrideWith((ref) => Stream.value(DateTime.now())),
     ],
     child: const RestaurantApp(),

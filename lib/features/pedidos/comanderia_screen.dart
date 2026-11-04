@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/pedido.dart';
@@ -92,9 +93,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Titulo(
-                alNuevo: puedeOperar
-                    ? () => _aviso('Pantalla "Registrar pedido" pendiente de diseño')
-                    : null,
+                alNuevo: puedeOperar ? () => context.go('/pedido/nuevo') : null,
               ),
               const SizedBox(height: 22),
               if (pedidos.hasValue)
@@ -192,7 +191,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             ahora: ahora,
             puedeOperar: puedeOperar,
             alCambiarEstado: _cambiarEstado,
-            alEditar: (p) => _aviso('Pantalla "Editar pedido ${p.folioEtiqueta}" pendiente de diseño'),
+            alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
             alVer: (p) => _aviso('Pantalla "Detalle ${p.folioEtiqueta}" pendiente de diseño'),
           ),
           _Paginador(

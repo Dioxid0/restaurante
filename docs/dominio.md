@@ -56,6 +56,21 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Precio congelado en `detalle_pedido.precio_unitario`; `total` se recalcula con triggers.
 - Cocina recibe `notificacion_cocina` (`nuevo`, `modificado`, `cancelado`); la app se suscribe por Realtime.
 
+## Menú y comanda
+- `platillo.categoria` es una lista fija: Bebidas, Antojitos/Entradas, Platos Fuertes, Postres, Especialidades.
+- `platillo.imagen_url` (opcional). Sin imagen, la app muestra un ícono de la categoría.
+- `disponible = false` => el platillo se muestra "Agotado", sin botón de agregar (para que el mesero avise al cliente).
+- **Mesa automática**: al crear un pedido *en mesa* la mesa pasa a `ocupada`; vuelve a `libre` cuando
+  todos sus pedidos en mesa están `completado` o `cancelado`. Se puede pedir en una mesa ya ocupada
+  (pedido "extra"). Los pedidos *para llevar* no ocupan la mesa, aunque se asocien a una.
+- "Para llevar" admite la casilla **Sin mesa** (marcada por defecto): no asocia mesa.
+- **Una sola pantalla de comanda** (`/pedido/nuevo` y `/pedido/:folio/editar`) para crear, editar y para que
+  el cliente pida en línea (el cliente no elige mesa ni tipo: siempre es para llevar).
+- El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
+- `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
+  Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
+- Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
+
 ## Reservaciones (diseño propio, simple)
 - La mesa se **asigna automáticamente**: la de menor capacidad que alcance y no se empalme.
   Se supone una duración de **2 horas** por reservación.

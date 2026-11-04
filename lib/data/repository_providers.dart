@@ -3,6 +3,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/repositories/auth_repository.dart';
 import '../domain/repositories/empleado_repository.dart';
+import '../domain/repositories/menu_repository.dart';
+import 'supabase_menu_repository.dart';
 import '../domain/repositories/pedido_repository.dart';
 import 'supabase_auth_repository.dart';
 import 'supabase_empleado_repository.dart';
@@ -24,3 +26,9 @@ PedidoRepository pedidoRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 EmpleadoRepository empleadoRepository(Ref ref) =>
     SupabaseEmpleadoRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+MenuRepository menuRepository(Ref ref) => SupabaseMenuRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+MesaRepository mesaRepository(Ref ref) => SupabaseMesaRepository(Supabase.instance.client);

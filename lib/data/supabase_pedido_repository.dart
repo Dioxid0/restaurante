@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/entities/pedido.dart';
+import '../domain/entities/pedido_detalle.dart';
 import '../domain/errors.dart';
 import '../domain/repositories/pedido_repository.dart';
 
@@ -57,6 +58,98 @@ class SupabasePedidoRepository implements PedidoRepository {
           .eq('folio', folio);
     } on PostgrestException catch (e) {
       // Los mensajes de las reglas (RN-03, etc.) vienen en español desde la base.
+      throw ErrorDeNegocio(e.message);
+    }
+  }
+
+  List<Map<String, dynamic>> _itemsAJson(List<ItemPedido> items) => [
+        for (final i in items)
+          {
+            'id_platillo': i.idPlatillo,
+            'cantidad': i.cantidad,
+            'notas_especiales': (i.nota == null || i.nota!.trim().isEmpty) ? null : i.nota!.trim(),
+          },
+      ];
+
+  @override
+  Future<int> crearPedido({
+    required TipoPedido tipo,
+    required List<ItemPedido> items,
+    int? idMesa,
+  }) async {
+    try {
+      final folio = await _client.rpc('crear_pedido', params: {
+        'p_tipo_pedido': tipo.valorBd,
+        'p_id_mesa': idMesa,
+        'p_items': _itemsAJson(items),
+      });
+      return (folio as num).toInt();
+    } on PostgrestException catch (e) {
+      throw ErrorDeNegocio(e.message);
+    }
+  }
+
+  @override
+  Future<PedidoDetalle> obtenerPedido(int folio) async {
+    try {
+      final f = await _client
+          .from('pedido')
+          .select('folio, folio_dia, tipo_pedido, estado, id_mesa, '
+              'detalle_pedido(id_detalle, id_platillo, cantidad, precio_unitario, '
+              'notas_especiales, platillo:id_platillo(nombre))')
+          .eq('folio', folio)
+          .single();
+      final renglones = [...(f['detalle_pedido'] as List)]
+        ..sort((a, b) => (a['id_detalle'] as int).compareTo(b['id_detalle'] as int));
+      return PedidoDetalle(
+        folio: f['folio'] as int,
+        folioDia: f['folio_dia'] as int,
+        tipo: TipoPedido.desdeBd(f['tipo_pedido'] as String),
+        estado: EstadoPedido.desdeBd(f['estado'] as String),
+        idMesa: f['id_mesa'] as int?,
+        lineas: [
+          for (final r in renglones)
+            LineaPedido(
+              idPlatillo: r['id_platillo'] as int,
+              nombre: (r['platillo'] as Map<String, dynamic>)['nombre'] as String,
+              precioUnitario: (r['precio_unitario'] as num).toDouble(),
+              cantidad: r['cantidad'] as int,
+              nota: r['notas_especiales'] as String?,
+            ),
+        ],
+      );
+    } on PostgrestException catch (e) {
+      throw ErrorDeNegocio(e.message);
+    }
+  }
+
+  @override
+  Future<void> actualizarPedido({
+    required int folio,
+    required TipoPedido tipo,
+    required List<ItemPedido> items,
+    int? idMesa,
+  }) async {
+    try {
+      await _client.rpc('actualizar_pedido', params: {
+        'p_folio': folio,
+        'p_tipo_pedido': tipo.valorBd,
+        'p_id_mesa': idMesa,
+        'p_items': _itemsAJson(items),
+      });
+    } on PostgrestException catch (e) {
+      throw ErrorDeNegocio(e.message);
+    }
+  }
+
+  @override
+  Future<void> cancelarPedido(int folio, String motivo) async {
+    try {
+      await _client
+          .from('pedido')
+          .update({'estado': EstadoPedido.cancelado.valorBd, 'motivo_cancelacion': motivo})
+          .eq('folio', folio);
+    } on PostgrestException catch (e) {
       throw ErrorDeNegocio(e.message);
     }
   }

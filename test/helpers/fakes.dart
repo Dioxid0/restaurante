@@ -1,11 +1,15 @@
 import 'dart:async';
 
 import 'package:restaurant_app/domain/entities/cuenta_personal.dart';
+import 'package:restaurant_app/domain/entities/mesa.dart';
 import 'package:restaurant_app/domain/entities/pedido.dart';
+import 'package:restaurant_app/domain/entities/pedido_detalle.dart';
 import 'package:restaurant_app/domain/entities/perfil.dart';
+import 'package:restaurant_app/domain/entities/platillo.dart';
 import 'package:restaurant_app/domain/errors.dart';
 import 'package:restaurant_app/domain/repositories/auth_repository.dart';
 import 'package:restaurant_app/domain/repositories/empleado_repository.dart';
+import 'package:restaurant_app/domain/repositories/menu_repository.dart';
 import 'package:restaurant_app/domain/repositories/pedido_repository.dart';
 
 Perfil perfilDe(RolUsuario rol, {String nombre = 'Juan Pérez'}) =>
@@ -70,11 +74,78 @@ class FakeAuthRepository implements AuthRepository {
   }
 }
 
+class FakeMenuRepository implements MenuRepository {
+  FakeMenuRepository([List<Platillo>? platillos]) : platillos_ = platillos ?? menuDePrueba();
+  final List<Platillo> platillos_;
+
+  @override
+  Future<List<Platillo>> platillos() async => platillos_;
+}
+
+class FakeMesaRepository implements MesaRepository {
+  FakeMesaRepository([List<Mesa>? mesas]) : mesas_ = mesas ?? mesasDePrueba();
+  final List<Mesa> mesas_;
+
+  @override
+  Future<List<Mesa>> mesas() async => mesas_;
+}
+
+List<Platillo> menuDePrueba() => const [
+      Platillo(idPlatillo: 1, nombre: 'Agua de Jamaica', precio: 48, categoria: CategoriaPlatillo.bebidas, disponible: true),
+      Platillo(idPlatillo: 2, nombre: 'Enchiladas Verdes', precio: 165, categoria: CategoriaPlatillo.platosFuertes, disponible: true),
+      Platillo(idPlatillo: 3, nombre: 'Flan de la Abuela', precio: 89, categoria: CategoriaPlatillo.postres, disponible: true),
+      Platillo(idPlatillo: 4, nombre: 'Pastel de Chocolate', precio: 70, categoria: CategoriaPlatillo.postres, disponible: false),
+    ];
+
+List<Mesa> mesasDePrueba() => const [
+      Mesa(idMesa: 11, numeroMesa: 1, capacidad: 2, estado: EstadoMesa.libre),
+      Mesa(idMesa: 12, numeroMesa: 2, capacidad: 4, estado: EstadoMesa.ocupada),
+      Mesa(idMesa: 13, numeroMesa: 3, capacidad: 4, estado: EstadoMesa.libre),
+    ];
+
 class FakePedidoRepository implements PedidoRepository {
   FakePedidoRepository(this.pedidos);
 
   List<PedidoResumen> pedidos;
   final cambiosEstado = <(int, EstadoPedido)>[];
+
+  // --- crear / editar / cancelar ---
+  final creados = <({TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
+  final actualizados = <({int folio, TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
+  final cancelados = <(int, String)>[];
+  PedidoDetalle? detalleParaEditar;
+
+  /// Si no es null, crear/actualizar fallan con este mensaje.
+  String? errorAlGuardar;
+
+  @override
+  Future<int> crearPedido({
+    required TipoPedido tipo,
+    required List<ItemPedido> items,
+    int? idMesa,
+  }) async {
+    if (errorAlGuardar != null) throw ErrorDeNegocio(errorAlGuardar!);
+    creados.add((tipo: tipo, idMesa: idMesa, items: items));
+    return 100 + creados.length;
+  }
+
+  @override
+  Future<PedidoDetalle> obtenerPedido(int folio) async =>
+      detalleParaEditar ?? (throw const ErrorDeNegocio('Pedido no encontrado'));
+
+  @override
+  Future<void> actualizarPedido({
+    required int folio,
+    required TipoPedido tipo,
+    required List<ItemPedido> items,
+    int? idMesa,
+  }) async {
+    if (errorAlGuardar != null) throw ErrorDeNegocio(errorAlGuardar!);
+    actualizados.add((folio: folio, tipo: tipo, idMesa: idMesa, items: items));
+  }
+
+  @override
+  Future<void> cancelarPedido(int folio, String motivo) async => cancelados.add((folio, motivo));
 
   @override
   Future<List<PedidoResumen>> pedidosDelDia() async => pedidos;

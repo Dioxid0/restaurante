@@ -59,55 +59,75 @@ insert into public.mesa (numero_mesa, capacidad) values
   (1, 2), (2, 2), (3, 4), (4, 4), (5, 4), (6, 6), (7, 6), (8, 8),
   (9, 4), (10, 4), (11, 2), (12, 6);
 
--- Menú
-insert into public.platillo (nombre, precio, categoria) values
-  ('Guacamole con totopos',   85.00, 'Entradas'),
-  ('Sopa de tortilla',        75.00, 'Entradas'),
-  ('Quesadillas',             70.00, 'Entradas'),
-  ('Tacos al pastor (orden)', 120.00, 'Platos fuertes'),
-  ('Enchiladas verdes',       135.00, 'Platos fuertes'),
-  ('Arrachera con guarnición', 235.00, 'Platos fuertes'),
-  ('Pollo en mole',           150.00, 'Platos fuertes'),
-  ('Flan napolitano',         60.00, 'Postres'),
-  ('Pastel de chocolate',     70.00, 'Postres'),
-  ('Agua de horchata',        35.00, 'Bebidas'),
-  ('Refresco',                30.00, 'Bebidas'),
-  ('Café americano',          35.00, 'Bebidas');
+-- Menú (imagen_url null: la app muestra un ícono por categoría)
+insert into public.platillo (nombre, precio, categoria, disponible) values
+  ('Enchiladas Verdes',        165.00, 'Platos Fuertes',     true),
+  ('Tacos de Arrachera',       148.00, 'Platos Fuertes',     true),
+  ('Chilaquiles de la Casa',   142.00, 'Platos Fuertes',     true),
+  ('Pollo con Mole',           189.00, 'Platos Fuertes',     true),
+  ('Cochinita Pibil',          195.00, 'Especialidades',     true),
+  ('Arrachera con Guarnición', 235.00, 'Especialidades',     true),
+  ('Guacamole con Totopos',     85.00, 'Antojitos/Entradas', true),
+  ('Sopa de Tortilla',          75.00, 'Antojitos/Entradas', true),
+  ('Quesadillas',               70.00, 'Antojitos/Entradas', true),
+  ('Flan de la Abuela',         89.00, 'Postres',            true),
+  ('Pastel de Chocolate',       70.00, 'Postres',            false), -- agotado (para ver ese estado)
+  ('Agua de Jamaica',           48.00, 'Bebidas',            true),
+  ('Agua de Horchata',          35.00, 'Bebidas',            true),
+  ('Refresco',                  30.00, 'Bebidas',            true),
+  ('Café Americano',            35.00, 'Bebidas',            true);
 
 -- Pedidos de demostración (para ver la Comandería con datos). Se crean "como sistema",
 -- por eso no pasan por las reglas de la API. Las horas son relativas al momento del reset.
+create function pg_temp.pid(p_nombre text) returns bigint language sql as $$
+  select id_platillo from public.platillo where nombre = p_nombre
+$$;
+
 do $$
 declare
-  v_juan bigint := (select id_empleado from public.empleado where usuario = 'mesero');
-  v_ana  bigint := (select id_empleado from public.empleado where usuario = 'alopez');
+  v_juan  bigint := (select id_empleado from public.empleado where usuario = 'mesero');
+  v_ana   bigint := (select id_empleado from public.empleado where usuario = 'alopez');
   v_sofia bigint := (select id_empleado from public.empleado where usuario = 'sruiz');
   v_folio bigint;
 begin
-  -- (tipo, mesa, empleado, estado, minutos desde ingreso, [platillo, cantidad]...)
   insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
   values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 12), v_juan, 'listo', now() - interval '24 minutes')
   returning folio into v_folio;
-  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 6, 1), (v_folio, 10, 2), (v_folio, 3, 2);
+  insert into public.detalle_pedido (folio, id_platillo, cantidad, notas_especiales) values
+    (v_folio, pg_temp.pid('Arrachera con Guarnición'), 1, null),
+    (v_folio, pg_temp.pid('Agua de Horchata'), 2, null),
+    (v_folio, pg_temp.pid('Quesadillas'), 2, 'Sin cebolla');
 
   insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
   values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 3), v_sofia, 'entregado', now() - interval '32 minutes')
   returning folio into v_folio;
-  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 5, 2), (v_folio, 7, 2), (v_folio, 11, 2);
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values
+    (v_folio, pg_temp.pid('Enchiladas Verdes'), 2),
+    (v_folio, pg_temp.pid('Pollo con Mole'), 2),
+    (v_folio, pg_temp.pid('Refresco'), 2);
 
   insert into public.pedido (tipo_pedido, id_empleado, estado, hora_ingreso)
   values ('para_llevar', v_juan, 'en_preparacion', now() - interval '27 minutes')
   returning folio into v_folio;
-  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 4, 2), (v_folio, 12, 1);
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values
+    (v_folio, pg_temp.pid('Tacos de Arrachera'), 2),
+    (v_folio, pg_temp.pid('Café Americano'), 1);
 
   insert into public.pedido (tipo_pedido, id_empleado, estado, hora_ingreso)
   values ('para_llevar', v_ana, 'en_preparacion', now() - interval '18 minutes')
   returning folio into v_folio;
-  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 5, 1), (v_folio, 1, 1), (v_folio, 8, 2);
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values
+    (v_folio, pg_temp.pid('Chilaquiles de la Casa'), 1),
+    (v_folio, pg_temp.pid('Guacamole con Totopos'), 1),
+    (v_folio, pg_temp.pid('Flan de la Abuela'), 2);
 
   insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
   values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 1), v_juan, 'pendiente', now() - interval '3 minutes')
   returning folio into v_folio;
-  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 4, 1), (v_folio, 1, 1), (v_folio, 10, 2);
+  insert into public.detalle_pedido (folio, id_platillo, cantidad, notas_especiales) values
+    (v_folio, pg_temp.pid('Enchiladas Verdes'), 2, 'Sin tortilla'),
+    (v_folio, pg_temp.pid('Enchiladas Verdes'), 1, null),
+    (v_folio, pg_temp.pid('Agua de Jamaica'), 1, null);
 end $$;
 
 -- Las notificaciones y la bitácora de arriba son ruido del seed: se limpian.

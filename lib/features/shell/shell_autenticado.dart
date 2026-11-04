@@ -86,6 +86,43 @@ class AccesoPorRol extends ConsumerWidget {
   }
 }
 
+/// Muestra [child] solo a los [roles] indicados (para pantallas fuera de las pestañas).
+class AccesoRoles extends ConsumerWidget {
+  const AccesoRoles({super.key, required this.roles, required this.child});
+
+  final Set<RolUsuario> roles;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final perfil = ref.watch(perfilActualProvider);
+    return perfil.when(
+      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (_, _) => const Scaffold(body: Center(child: Text('No se pudo cargar tu perfil'))),
+      data: (p) {
+        if (p == null) return const Scaffold(body: Center(child: CircularProgressIndicator()));
+        if (!roles.contains(p.rol)) {
+          return Scaffold(
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const EnConstruccion(titulo: 'No tienes acceso a esta sección', icono: Icons.lock_outline),
+                  FilledButton(
+                    onPressed: () => context.go('/inicio'),
+                    child: const Text('Ir al inicio'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+        return child;
+      },
+    );
+  }
+}
+
 /// Inicio según el rol: el personal ve la Comandería; el cliente, su espacio.
 class InicioPorRol extends StatelessWidget {
   const InicioPorRol({super.key, required this.rol, required this.personal, required this.cliente});

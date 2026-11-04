@@ -44,6 +44,8 @@
 - **Zoom y escala** (`core/ui/zoom.dart`): escala automática en ventanas > 1500 px lógicos + zoom del usuario (Ctrl +/−/0 o botones del encabezado), guardado en shared_preferences.
 - Router (`core/router/app_router.dart`): go_router con ShellRoute y redirect según sesión.
 - Comandería (`features/pedidos`): pedidos del día, filtro de estado (por defecto "Activos"), búsqueda, paginación de 5, tiempo real. "Registrar", "Editar" y "Ver detalle" son stubs hasta recibir esas pantallas de Figma.
+- **Comanda** (`features/pedidos/comanda`): una sola pantalla (`PedidoFormScreen`) para crear, editar (`/pedido/:folio/editar`) y para el pedido en línea del cliente. Estado en `ComandaController` (familia por `esCliente`). Fuera del `ShellRoute`, protegida con `AccesoRoles` (mesero, gerente, cliente; no chef). Detalles y reglas en `docs/dominio.md` ("Menú y comanda").
+- Avisos flotantes: `core/ui/toast.dart` (`mostrarToast`). En pruebas, dejar pasar ~5 s con `tester.pump` para que el temporizador termine.
 - Seguridad: nunca confiar en la UI para permisos; toda regla va en la base. Las pruebas con teclado/mouse simulados sobre el escritorio están prohibidas (usar `flutter test`).
 - Diseño: tema en `core/theme` (paleta amber + navy estimada de las capturas de Figma); marco con encabezado en `presentation/layouts/app_shell.dart`.
 - Pruebas: `test/` usa repositorios falsos (`test/helpers/fakes.dart`) con `overrideWithValue`; nunca se conecta a Supabase.

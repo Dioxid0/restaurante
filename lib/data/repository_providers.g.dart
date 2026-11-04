@@ -143,3 +143,85 @@ final class EmpleadoRepositoryProvider
 
 String _$empleadoRepositoryHash() =>
     r'047325c07d99dee4a27953c5c75caf7f4b738616';
+
+@ProviderFor(menuRepository)
+final menuRepositoryProvider = MenuRepositoryProvider._();
+
+final class MenuRepositoryProvider
+    extends $FunctionalProvider<MenuRepository, MenuRepository, MenuRepository>
+    with $Provider<MenuRepository> {
+  MenuRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'menuRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$menuRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<MenuRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  MenuRepository create(Ref ref) {
+    return menuRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MenuRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MenuRepository>(value),
+    );
+  }
+}
+
+String _$menuRepositoryHash() => r'155bf8623bad1b76ed96e199305ee7d79d37e401';
+
+@ProviderFor(mesaRepository)
+final mesaRepositoryProvider = MesaRepositoryProvider._();
+
+final class MesaRepositoryProvider
+    extends $FunctionalProvider<MesaRepository, MesaRepository, MesaRepository>
+    with $Provider<MesaRepository> {
+  MesaRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'mesaRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$mesaRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<MesaRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  MesaRepository create(Ref ref) {
+    return mesaRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(MesaRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<MesaRepository>(value),
+    );
+  }
+}
+
+String _$mesaRepositoryHash() => r'9e24d402d40813a87b4ce5bcd800afb72a56ddbb';
