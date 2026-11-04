@@ -15,7 +15,7 @@ Future<List<Platillo>> menu(Ref ref) => ref.watch(menuRepositoryProvider).platil
 @riverpod
 Future<List<Mesa>> mesas(Ref ref) => ref.watch(mesaRepositoryProvider).mesas();
 
-/// Pedido a editar.
+/// Pedido completo (para editarlo o verlo en el modal de detalle).
 @riverpod
-Future<PedidoDetalle> pedidoParaEditar(Ref ref, int folio) =>
+Future<PedidoDetalle> detallePedido(Ref ref, int folio) =>
     ref.watch(pedidoRepositoryProvider).obtenerPedido(folio);

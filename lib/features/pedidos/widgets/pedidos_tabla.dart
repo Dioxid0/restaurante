@@ -3,11 +3,14 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formato.dart';
 import '../../../domain/entities/pedido.dart';
+import 'boton_confirmable.dart';
 import 'pedido_chips.dart';
 
 typedef AlCambiarEstado = void Function(PedidoResumen pedido, EstadoPedido nuevo);
 
-/// Tabla de comandas (encabezado + filas). Las filas se pasan ya paginadas.
+/// Lista de comandas. Las filas se pasan ya paginadas.
+///  * Escritorio / tablet: tabla de 6 columnas (el mesero va en gris bajo el folio).
+///  * Pantallas angostas (< 700 px): una tarjeta por pedido.
 class PedidosTabla extends StatelessWidget {
   const PedidosTabla({
     super.key,
@@ -28,18 +31,21 @@ class PedidosTabla extends StatelessWidget {
   final ValueChanged<PedidoResumen> alEditar;
   final ValueChanged<PedidoResumen> alVer;
 
-  // Anchos relativos de las columnas.
-  static const _flex = [12, 12, 14, 8, 15, 16, 12, 18];
+  /// Debajo de este ancho se usan tarjetas en vez de tabla.
+  static const anchoTarjetas = 700.0;
 
-  /// Ancho mínimo para que las columnas no se aprieten; si la ventana es
-  /// más angosta la tabla se desplaza horizontalmente.
-  static const _anchoMinimo = 1000.0;
+  /// Ancho mínimo de la tabla; si la ventana es más angosta (pero < anchoTarjetas no ocurre) se desplaza.
+  static const _anchoMinimo = 760.0;
+
+  // Anchos relativos de las 6 columnas: folio, hora, mesa/tipo, estado, total, acciones.
+  static const _flex = [16, 12, 15, 18, 12, 27];
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, c) {
-        final contenido = _contenido();
+        if (c.maxWidth < anchoTarjetas) return _tarjetas();
+        final contenido = _tabla();
         if (c.maxWidth >= _anchoMinimo) return contenido;
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
@@ -49,7 +55,9 @@ class PedidosTabla extends StatelessWidget {
     );
   }
 
-  Widget _contenido() {
+  // ---------------------------------------------------------------- tabla
+
+  Widget _tabla() {
     return Column(
       children: [
         _fila(
@@ -58,115 +66,32 @@ class PedidosTabla extends StatelessWidget {
           celdas: const [
             _Encabezado('FOLIO'),
             _Encabezado('HORA'),
-            _Encabezado('TIPO DE PEDIDO'),
-            _Encabezado('MESA'),
-            _Encabezado('MESERO'),
+            _Encabezado('MESA / TIPO'),
             _Encabezado('ESTADO'),
             _Encabezado('TOTAL'),
             _Encabezado('ACCIONES', alinearDerecha: true),
           ],
         ),
-        if (pedidos.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 48),
-            child: Text(
-              'No hay pedidos con estos filtros',
-              style: TextStyle(color: AppColors.textMuted),
-            ),
-          ),
+        if (pedidos.isEmpty) const _SinResultados(),
         for (final p in pedidos) _filaPedido(p),
       ],
     );
   }
 
   Widget _filaPedido(PedidoResumen p) {
-    final minutos = ahora.difference(p.horaIngreso).inMinutes;
     return _fila(
       fondo: p.estado == EstadoPedido.pendiente ? AppColors.amberRow : Colors.white,
-      alto: 54,
+      alto: 58,
       celdas: [
-        Text(
-          p.folioEtiqueta,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
-        ),
-        Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              formatoHora(p.horaIngreso),
-              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
-            ),
-            if (p.estado.esActivo) ...[
-              const SizedBox(height: 3),
-              TiempoChip(minutos: minutos < 0 ? 0 : minutos),
-            ],
-          ],
-        ),
-        Align(alignment: Alignment.centerLeft, child: TipoPedidoIcono(p.tipo)),
-        Text(
-          p.mesaEtiqueta ?? '—',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
-        ),
-        Text(
-          p.nombreMesero ?? (p.esEnLinea ? 'En línea' : '—'),
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
-          overflow: TextOverflow.ellipsis,
-        ),
-        Align(alignment: Alignment.centerLeft, child: EstadoChip(p.estado)),
+        _Folio(p),
+        _Hora(p, ahora),
+        _MesaTipo(p),
+        EstadoChip(p.estado),
         Text(
           formatoMoneda(p.total),
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            if (puedeOperar && p.estado == EstadoPedido.pendiente) ...[
-              OutlinedButton.icon(
-                onPressed: () => alEditar(p),
-                icon: const Icon(Icons.edit_outlined, size: 15),
-                label: const Text('Editar'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFB45309),
-                  backgroundColor: const Color(0xFFFFF7ED),
-                  side: const BorderSide(color: Color(0xFFFDBA74)),
-                  minimumSize: const Size(0, 34),
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
-                ),
-              ),
-              const SizedBox(width: 6),
-            ],
-            if (puedeOperar && p.estado == EstadoPedido.listo) ...[
-              BotonIcono(
-                icono: Icons.check_circle_outline,
-                tooltip: 'Marcar como entregado',
-                color: const Color(0xFF2563EB),
-                fondo: const Color(0xFFEFF6FF),
-                borde: const Color(0xFFBFDBFE),
-                alPresionar: () => alCambiarEstado(p, EstadoPedido.entregado),
-              ),
-              const SizedBox(width: 6),
-            ],
-            if (puedeOperar && p.estado == EstadoPedido.entregado) ...[
-              BotonIcono(
-                icono: Icons.check_circle_outline,
-                tooltip: 'Marcar como completado',
-                color: const Color(0xFF047857),
-                fondo: const Color(0xFFECFDF5),
-                borde: const Color(0xFF6EE7B7),
-                alPresionar: () => alCambiarEstado(p, EstadoPedido.completado),
-              ),
-              const SizedBox(width: 6),
-            ],
-            BotonIcono(
-              icono: Icons.visibility_outlined,
-              tooltip: 'Ver detalle',
-              alPresionar: () => alVer(p),
-            ),
-          ],
-        ),
+        Align(alignment: Alignment.centerRight, child: _acciones(p)),
       ],
     );
   }
@@ -191,6 +116,219 @@ class PedidosTabla extends StatelessWidget {
               child: Align(alignment: Alignment.centerLeft, child: celdas[i]),
             ),
         ],
+      ),
+    );
+  }
+
+  // ------------------------------------------------------------ tarjetas
+
+  Widget _tarjetas() {
+    if (pedidos.isEmpty) return const _SinResultados();
+    return Column(
+      children: [
+        for (final p in pedidos)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+            decoration: BoxDecoration(
+              color: p.estado == EstadoPedido.pendiente ? AppColors.amberRow : Colors.white,
+              border: const Border(top: BorderSide(color: AppColors.borderSoft)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p.folioEtiqueta,
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      ),
+                    ),
+                    EstadoChip(p.estado),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    _MesaTipo(p),
+                    const Spacer(),
+                    _Hora(p, ahora, enLinea: true),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        p.nombreMesero ?? (p.esEnLinea ? 'En línea' : ''),
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textFaint, fontSize: 11.5),
+                      ),
+                    ),
+                    Text(
+                      formatoMoneda(p.total),
+                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Align(alignment: Alignment.centerRight, child: _acciones(p)),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ------------------------------------------------------------ acciones
+
+  Widget _acciones(PedidoResumen p) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (puedeOperar && p.estado == EstadoPedido.pendiente) ...[
+          OutlinedButton.icon(
+            onPressed: () => alEditar(p),
+            icon: const Icon(Icons.edit_outlined, size: 15),
+            label: const Text('Editar'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFB45309),
+              backgroundColor: const Color(0xFFFFF7ED),
+              side: const BorderSide(color: Color(0xFFFDBA74)),
+              minimumSize: const Size(0, 34),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+            ),
+          ),
+          const SizedBox(width: 6),
+        ],
+        if (puedeOperar && p.estado == EstadoPedido.listo) ...[
+          BotonConfirmable(
+            icono: Icons.check_circle_outline,
+            tooltip: 'Marcar como entregado',
+            titulo: '¿Marcar como Entregado?',
+            detalle: p.folioEtiqueta,
+            color: const Color(0xFF2563EB),
+            fondo: const Color(0xFFEFF6FF),
+            borde: const Color(0xFFBFDBFE),
+            alConfirmar: () => alCambiarEstado(p, EstadoPedido.entregado),
+          ),
+          const SizedBox(width: 6),
+        ],
+        if (puedeOperar && p.estado == EstadoPedido.entregado) ...[
+          BotonConfirmable(
+            icono: Icons.check_circle_outline,
+            tooltip: 'Marcar como completado',
+            titulo: '¿Marcar como Completado?',
+            detalle: p.folioEtiqueta,
+            color: const Color(0xFF047857),
+            fondo: const Color(0xFFECFDF5),
+            borde: const Color(0xFF6EE7B7),
+            alConfirmar: () => alCambiarEstado(p, EstadoPedido.completado),
+          ),
+          const SizedBox(width: 6),
+        ],
+        BotonIcono(
+          icono: Icons.visibility_outlined,
+          tooltip: 'Ver detalle',
+          alPresionar: () => alVer(p),
+        ),
+      ],
+    );
+  }
+}
+
+// ------------------------------------------------------------- celdas
+
+/// "#PED-108" con el mesero en gris debajo.
+class _Folio extends StatelessWidget {
+  const _Folio(this.p);
+  final PedidoResumen p;
+
+  @override
+  Widget build(BuildContext context) {
+    final mesero = p.nombreMesero ?? (p.esEnLinea ? 'En línea' : null);
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(p.folioEtiqueta, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5)),
+        if (mesero != null)
+          Text(
+            mesero,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: AppColors.textFaint, fontSize: 10.5),
+          ),
+      ],
+    );
+  }
+}
+
+/// Hora de ingreso + minutos transcurridos (solo pedidos activos).
+class _Hora extends StatelessWidget {
+  const _Hora(this.p, this.ahora, {this.enLinea = false});
+  final PedidoResumen p;
+  final DateTime ahora;
+
+  /// true en tarjetas: hora y chip en la misma línea.
+  final bool enLinea;
+
+  @override
+  Widget build(BuildContext context) {
+    final minutos = ahora.difference(p.horaIngreso).inMinutes;
+    final hora = Text(
+      formatoHora(p.horaIngreso),
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+    );
+    final chip = p.estado.esActivo ? TiempoChip(minutos: minutos < 0 ? 0 : minutos) : null;
+    if (enLinea) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [hora, if (chip != null) ...[const SizedBox(width: 8), chip]],
+      );
+    }
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [hora, if (chip != null) ...[const SizedBox(height: 3), chip]],
+    );
+  }
+}
+
+/// Ícono del tipo (con tooltip) + mesa: "🍽 M-01" o "🛍 Llevar".
+class _MesaTipo extends StatelessWidget {
+  const _MesaTipo(this.p);
+  final PedidoResumen p;
+
+  @override
+  Widget build(BuildContext context) {
+    final texto = p.mesaEtiqueta ?? (p.tipo == TipoPedido.paraLlevar ? 'Llevar' : '—');
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TipoPedidoIcono(p.tipo),
+        const SizedBox(width: 8),
+        Text(texto, style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5)),
+      ],
+    );
+  }
+}
+
+class _SinResultados extends StatelessWidget {
+  const _SinResultados();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Text(
+          'No hay pedidos con estos filtros',
+          style: TextStyle(color: AppColors.textMuted),
+        ),
       ),
     );
   }

@@ -1,0 +1,332 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../core/theme/app_colors.dart';
+import '../../../core/utils/formato.dart';
+import '../../../domain/entities/pedido.dart';
+import '../../../domain/entities/pedido_detalle.dart';
+import '../../../domain/errors.dart';
+import '../comanda/comanda_providers.dart';
+import '../widgets/pedido_chips.dart';
+
+/// Muestra el modal con todos los datos de un pedido.
+Future<void> mostrarDetallePedido(BuildContext context, int folio) => showDialog<void>(
+      context: context,
+      builder: (_) => DetallePedidoDialog(folio: folio),
+    );
+
+/// Modal "Detalle de Comanda - #PED-108": datos generales, renglones y totales.
+class DetallePedidoDialog extends ConsumerWidget {
+  const DetallePedidoDialog({super.key, required this.folio});
+  final int folio;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final detalle = ref.watch(detallePedidoProvider(folio));
+
+    return Dialog(
+      backgroundColor: Colors.white,
+      surfaceTintColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(20),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 680),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(26),
+          child: detalle.when(
+            loading: () => const SizedBox(
+              height: 220,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (e, _) => _Error(
+              mensaje: mensajeDeError(e, porDefecto: 'No se pudo cargar el pedido'),
+              alCerrar: () => Navigator.of(context).pop(),
+            ),
+            data: (d) => _Contenido(detalle: d, alCerrar: () => Navigator.of(context).pop()),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Contenido extends StatelessWidget {
+  const _Contenido({required this.detalle, required this.alCerrar});
+  final PedidoDetalle detalle;
+  final VoidCallback alCerrar;
+
+  @override
+  Widget build(BuildContext context) {
+    final iva = desgloseIva(detalle.total);
+    final tipo = detalle.tipo == TipoPedido.enMesa ? 'Presencial' : 'Para Llevar';
+    final mesero = detalle.nombreMesero ?? (detalle.esEnLinea ? 'En línea' : '—');
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'DETALLE DEL PEDIDO',
+                    style: TextStyle(
+                      color: AppColors.amber,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Detalle de Comanda - ${detalle.folioEtiqueta}',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            InkWell(
+              onTap: alCerrar,
+              borderRadius: BorderRadius.circular(11),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(11),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: const Icon(Icons.close, size: 18, color: AppColors.textMuted),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 22),
+        // --- Datos generales ---
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: AppColors.pageBg,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Wrap(
+            spacing: 36,
+            runSpacing: 14,
+            children: [
+              _Dato('Folio', detalle.folioEtiqueta),
+              _Dato('Mesa', detalle.mesaEtiqueta ?? '—'),
+              _Dato('Tipo de pedido', tipo),
+              _Dato('Mesero asignado', mesero),
+              _Dato('Estado', null, hijo: EstadoChip(detalle.estado)),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // --- Renglones ---
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              const _FilaRenglon(
+                fondo: AppColors.pageBg,
+                platillo: Text('PLATILLO', style: _estiloEncabezado),
+                cantidad: Text('CANT.', style: _estiloEncabezado),
+                unitario: Text('P. UNITARIO', style: _estiloEncabezado),
+                importe: Text('IMPORTE', style: _estiloEncabezado),
+              ),
+              for (final l in detalle.lineas)
+                _FilaRenglon(
+                  platillo: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.nombre, style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700)),
+                      if (l.nota != null && l.nota!.isNotEmpty)
+                        Text(
+                          'Nota: ${l.nota}',
+                          style: const TextStyle(color: Color(0xFFD97706), fontSize: 10.5),
+                        ),
+                    ],
+                  ),
+                  cantidad: Text('${l.cantidad}', style: const TextStyle(fontSize: 12)),
+                  unitario: Text(
+                    formatoMoneda(l.precioUnitario),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                  ),
+                  importe: Text(
+                    formatoMoneda(l.importe),
+                    style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // --- Totales ---
+        Align(
+          alignment: Alignment.centerRight,
+          child: Container(
+            width: 300,
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: AppColors.pageBg,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Column(
+              children: [
+                _FilaTotal('Subtotal', formatoMoneda(iva.subtotal)),
+                const SizedBox(height: 8),
+                _FilaTotal('IVA (16%)', formatoMoneda(iva.iva)),
+                if (detalle.descuento > 0) ...[
+                  const SizedBox(height: 8),
+                  _FilaTotal(
+                    detalle.esCortesia ? 'Cortesía' : 'Descuento',
+                    '-${formatoMoneda(detalle.descuento)}',
+                  ),
+                ],
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 10),
+                  child: Divider(height: 1, color: AppColors.border),
+                ),
+                Row(
+                  children: [
+                    const Expanded(child: Text('Total', style: TextStyle(fontWeight: FontWeight.w600))),
+                    Text(
+                      formatoMoneda(detalle.total),
+                      key: const Key('total_detalle'),
+                      style: const TextStyle(
+                        color: Color(0xFFB45309),
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          width: double.infinity,
+          height: 50,
+          child: FilledButton(
+            onPressed: alCerrar,
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.navy900,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            child: const Text('Cerrar'),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+const _estiloEncabezado = TextStyle(
+  color: AppColors.textMuted,
+  fontSize: 10,
+  fontWeight: FontWeight.w800,
+  letterSpacing: 0.8,
+);
+
+class _Dato extends StatelessWidget {
+  const _Dato(this.etiqueta, this.valor, {this.hijo});
+  final String etiqueta;
+  final String? valor;
+  final Widget? hijo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(etiqueta, style: const TextStyle(color: AppColors.textFaint, fontSize: 10.5)),
+        const SizedBox(height: 4),
+        hijo ?? Text(valor ?? '', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+class _FilaRenglon extends StatelessWidget {
+  const _FilaRenglon({
+    required this.platillo,
+    required this.cantidad,
+    required this.unitario,
+    required this.importe,
+    this.fondo = Colors.white,
+  });
+
+  final Widget platillo;
+  final Widget cantidad;
+  final Widget unitario;
+  final Widget importe;
+  final Color fondo;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 13),
+      decoration: BoxDecoration(
+        color: fondo,
+        border: const Border(top: BorderSide(color: AppColors.borderSoft)),
+      ),
+      child: Row(
+        children: [
+          Expanded(flex: 5, child: platillo),
+          Expanded(flex: 1, child: cantidad),
+          Expanded(flex: 2, child: unitario),
+          Expanded(flex: 2, child: importe),
+        ],
+      ),
+    );
+  }
+}
+
+class _FilaTotal extends StatelessWidget {
+  const _FilaTotal(this.etiqueta, this.valor);
+  final String etiqueta;
+  final String valor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(child: Text(etiqueta, style: const TextStyle(color: AppColors.textMuted, fontSize: 12))),
+        Text(valor, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+      ],
+    );
+  }
+}
+
+class _Error extends StatelessWidget {
+  const _Error({required this.mensaje, required this.alCerrar});
+  final String mensaje;
+  final VoidCallback alCerrar;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 20),
+        const Icon(Icons.error_outline, size: 36, color: AppColors.danger),
+        const SizedBox(height: 12),
+        Text(mensaje, textAlign: TextAlign.center),
+        const SizedBox(height: 18),
+        FilledButton(onPressed: alCerrar, child: const Text('Cerrar')),
+      ],
+    );
+  }
+}

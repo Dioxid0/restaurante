@@ -8,6 +8,14 @@ String formatoMoneda(double valor) {
   return '\$$enteros.${partes[1]}';
 }
 
+/// Los precios ya incluyen IVA (16 %): separa el total en subtotal e IVA.
+/// 313.00 -> (269.83, 43.17)
+({double subtotal, double iva}) desgloseIva(double totalConIva, {double tasa = 0.16}) {
+  final subtotal = double.parse((totalConIva / (1 + tasa)).toStringAsFixed(2));
+  final iva = double.parse((totalConIva - subtotal).toStringAsFixed(2));
+  return (subtotal: subtotal, iva: iva);
+}
+
 /// 14:05
 String formatoHora(DateTime fecha) =>
     '${fecha.hour.toString().padLeft(2, '0')}:${fecha.minute.toString().padLeft(2, '0')}';

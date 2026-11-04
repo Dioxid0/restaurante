@@ -487,8 +487,8 @@ return $default(_that.idPlatillo,_that.nombre,_that.precioUnitario,_that.cantida
 /// @nodoc
 
 
-class _LineaPedido implements LineaPedido {
-  const _LineaPedido({required this.idPlatillo, required this.nombre, required this.precioUnitario, required this.cantidad, this.nota});
+class _LineaPedido extends LineaPedido {
+  const _LineaPedido({required this.idPlatillo, required this.nombre, required this.precioUnitario, required this.cantidad, this.nota}): super._();
   
 
 @override final  int idPlatillo;
@@ -563,7 +563,7 @@ as String?,
 /// @nodoc
 mixin _$PedidoDetalle {
 
- int get folio; int get folioDia; TipoPedido get tipo; EstadoPedido get estado; List<LineaPedido> get lineas; int? get idMesa;
+ int get folio; int get folioDia; TipoPedido get tipo; EstadoPedido get estado; List<LineaPedido> get lineas; int? get idMesa; int? get numeroMesa; String? get nombreMesero; bool get esEnLinea; double get total; double get descuento; bool get esCortesia;
 /// Create a copy of PedidoDetalle
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -575,20 +575,20 @@ $PedidoDetalleCopyWith<PedidoDetalle> get copyWith => _$PedidoDetalleCopyWithImp
 @override
 bool operator ==(Object other) {
   final _this = this as PedidoDetalle;
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PedidoDetalle&&(identical(other.folio, _this.folio) || other.folio == _this.folio)&&(identical(other.folioDia, _this.folioDia) || other.folioDia == _this.folioDia)&&(identical(other.tipo, _this.tipo) || other.tipo == _this.tipo)&&(identical(other.estado, _this.estado) || other.estado == _this.estado)&&const DeepCollectionEquality().equals(other.lineas, _this.lineas)&&(identical(other.idMesa, _this.idMesa) || other.idMesa == _this.idMesa));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PedidoDetalle&&(identical(other.folio, _this.folio) || other.folio == _this.folio)&&(identical(other.folioDia, _this.folioDia) || other.folioDia == _this.folioDia)&&(identical(other.tipo, _this.tipo) || other.tipo == _this.tipo)&&(identical(other.estado, _this.estado) || other.estado == _this.estado)&&const DeepCollectionEquality().equals(other.lineas, _this.lineas)&&(identical(other.idMesa, _this.idMesa) || other.idMesa == _this.idMesa)&&(identical(other.numeroMesa, _this.numeroMesa) || other.numeroMesa == _this.numeroMesa)&&(identical(other.nombreMesero, _this.nombreMesero) || other.nombreMesero == _this.nombreMesero)&&(identical(other.esEnLinea, _this.esEnLinea) || other.esEnLinea == _this.esEnLinea)&&(identical(other.total, _this.total) || other.total == _this.total)&&(identical(other.descuento, _this.descuento) || other.descuento == _this.descuento)&&(identical(other.esCortesia, _this.esCortesia) || other.esCortesia == _this.esCortesia));
 }
 
 
 @override
 int get hashCode {
   final _this = this as PedidoDetalle;
-  return Object.hash(runtimeType,_this.folio,_this.folioDia,_this.tipo,_this.estado,const DeepCollectionEquality().hash(_this.lineas),_this.idMesa);
+  return Object.hash(runtimeType,_this.folio,_this.folioDia,_this.tipo,_this.estado,const DeepCollectionEquality().hash(_this.lineas),_this.idMesa,_this.numeroMesa,_this.nombreMesero,_this.esEnLinea,_this.total,_this.descuento,_this.esCortesia);
 }
 
 @override
 String toString() {
   final _this = this as PedidoDetalle;
-  return 'PedidoDetalle(folio: ${_this.folio}, folioDia: ${_this.folioDia}, tipo: ${_this.tipo}, estado: ${_this.estado}, lineas: ${_this.lineas}, idMesa: ${_this.idMesa})';
+  return 'PedidoDetalle(folio: ${_this.folio}, folioDia: ${_this.folioDia}, tipo: ${_this.tipo}, estado: ${_this.estado}, lineas: ${_this.lineas}, idMesa: ${_this.idMesa}, numeroMesa: ${_this.numeroMesa}, nombreMesero: ${_this.nombreMesero}, esEnLinea: ${_this.esEnLinea}, total: ${_this.total}, descuento: ${_this.descuento}, esCortesia: ${_this.esCortesia})';
 }
 
 
@@ -599,7 +599,7 @@ abstract mixin class $PedidoDetalleCopyWith<$Res>  {
   factory $PedidoDetalleCopyWith(PedidoDetalle value, $Res Function(PedidoDetalle) _then) = _$PedidoDetalleCopyWithImpl;
 @useResult
 $Res call({
- int folio, int folioDia, TipoPedido tipo, EstadoPedido estado, List<LineaPedido> lineas, int? idMesa
+ int folio, int folioDia, TipoPedido tipo, EstadoPedido estado, List<LineaPedido> lineas, int? idMesa, int? numeroMesa, String? nombreMesero, bool esEnLinea, double total, double descuento, bool esCortesia
 });
 
 
@@ -616,7 +616,7 @@ class _$PedidoDetalleCopyWithImpl<$Res>
 
 /// Create a copy of PedidoDetalle
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? folio = null,Object? folioDia = null,Object? tipo = null,Object? estado = null,Object? lineas = null,Object? idMesa = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? folio = null,Object? folioDia = null,Object? tipo = null,Object? estado = null,Object? lineas = null,Object? idMesa = freezed,Object? numeroMesa = freezed,Object? nombreMesero = freezed,Object? esEnLinea = null,Object? total = null,Object? descuento = null,Object? esCortesia = null,}) {
   return _then(PedidoDetalle(
 folio: null == folio ? _self.folio : folio // ignore: cast_nullable_to_non_nullable
 as int,folioDia: null == folioDia ? _self.folioDia : folioDia // ignore: cast_nullable_to_non_nullable
@@ -624,7 +624,13 @@ as int,tipo: null == tipo ? _self.tipo : tipo // ignore: cast_nullable_to_non_nu
 as TipoPedido,estado: null == estado ? _self.estado : estado // ignore: cast_nullable_to_non_nullable
 as EstadoPedido,lineas: null == lineas ? _self.lineas : lineas // ignore: cast_nullable_to_non_nullable
 as List<LineaPedido>,idMesa: freezed == idMesa ? _self.idMesa : idMesa // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,numeroMesa: freezed == numeroMesa ? _self.numeroMesa : numeroMesa // ignore: cast_nullable_to_non_nullable
+as int?,nombreMesero: freezed == nombreMesero ? _self.nombreMesero : nombreMesero // ignore: cast_nullable_to_non_nullable
+as String?,esEnLinea: null == esEnLinea ? _self.esEnLinea : esEnLinea // ignore: cast_nullable_to_non_nullable
+as bool,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as double,descuento: null == descuento ? _self.descuento : descuento // ignore: cast_nullable_to_non_nullable
+as double,esCortesia: null == esCortesia ? _self.esCortesia : esCortesia // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -709,10 +715,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa,  int? numeroMesa,  String? nombreMesero,  bool esEnLinea,  double total,  double descuento,  bool esCortesia)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PedidoDetalle() when $default != null:
-return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa);case _:
+return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa,_that.numeroMesa,_that.nombreMesero,_that.esEnLinea,_that.total,_that.descuento,_that.esCortesia);case _:
   return orElse();
 
 }
@@ -730,10 +736,10 @@ return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa,  int? numeroMesa,  String? nombreMesero,  bool esEnLinea,  double total,  double descuento,  bool esCortesia)  $default,) {final _that = this;
 switch (_that) {
 case _PedidoDetalle():
-return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa);case _:
+return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa,_that.numeroMesa,_that.nombreMesero,_that.esEnLinea,_that.total,_that.descuento,_that.esCortesia);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -750,10 +756,10 @@ return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int folio,  int folioDia,  TipoPedido tipo,  EstadoPedido estado,  List<LineaPedido> lineas,  int? idMesa,  int? numeroMesa,  String? nombreMesero,  bool esEnLinea,  double total,  double descuento,  bool esCortesia)?  $default,) {final _that = this;
 switch (_that) {
 case _PedidoDetalle() when $default != null:
-return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa);case _:
+return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,_that.idMesa,_that.numeroMesa,_that.nombreMesero,_that.esEnLinea,_that.total,_that.descuento,_that.esCortesia);case _:
   return null;
 
 }
@@ -764,8 +770,8 @@ return $default(_that.folio,_that.folioDia,_that.tipo,_that.estado,_that.lineas,
 /// @nodoc
 
 
-class _PedidoDetalle implements PedidoDetalle {
-  const _PedidoDetalle({required this.folio, required this.folioDia, required this.tipo, required this.estado, required  List<LineaPedido> lineas, this.idMesa}): _lineas = lineas;
+class _PedidoDetalle extends PedidoDetalle {
+  const _PedidoDetalle({required this.folio, required this.folioDia, required this.tipo, required this.estado, required  List<LineaPedido> lineas, this.idMesa, this.numeroMesa, this.nombreMesero, this.esEnLinea = false, this.total = 0.0, this.descuento = 0.0, this.esCortesia = false}): _lineas = lineas,super._();
   
 
 @override final  int folio;
@@ -780,6 +786,12 @@ class _PedidoDetalle implements PedidoDetalle {
 }
 
 @override final  int? idMesa;
+@override final  int? numeroMesa;
+@override final  String? nombreMesero;
+@override@JsonKey() final  bool esEnLinea;
+@override@JsonKey() final  double total;
+@override@JsonKey() final  double descuento;
+@override@JsonKey() final  bool esCortesia;
 
 /// Create a copy of PedidoDetalle
 /// with the given fields replaced by the non-null parameter values.
@@ -791,18 +803,18 @@ _$PedidoDetalleCopyWith<_PedidoDetalle> get copyWith => __$PedidoDetalleCopyWith
 
 @override
 bool operator ==(Object other) {
-    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PedidoDetalle&&(identical(other.folio, folio) || other.folio == folio)&&(identical(other.folioDia, folioDia) || other.folioDia == folioDia)&&(identical(other.tipo, tipo) || other.tipo == tipo)&&(identical(other.estado, estado) || other.estado == estado)&&const DeepCollectionEquality().equals(other.lineas, _lineas)&&(identical(other.idMesa, idMesa) || other.idMesa == idMesa));
+    return identical(this, other) || (other.runtimeType == runtimeType&&other is _PedidoDetalle&&(identical(other.folio, folio) || other.folio == folio)&&(identical(other.folioDia, folioDia) || other.folioDia == folioDia)&&(identical(other.tipo, tipo) || other.tipo == tipo)&&(identical(other.estado, estado) || other.estado == estado)&&const DeepCollectionEquality().equals(other.lineas, _lineas)&&(identical(other.idMesa, idMesa) || other.idMesa == idMesa)&&(identical(other.numeroMesa, numeroMesa) || other.numeroMesa == numeroMesa)&&(identical(other.nombreMesero, nombreMesero) || other.nombreMesero == nombreMesero)&&(identical(other.esEnLinea, esEnLinea) || other.esEnLinea == esEnLinea)&&(identical(other.total, total) || other.total == total)&&(identical(other.descuento, descuento) || other.descuento == descuento)&&(identical(other.esCortesia, esCortesia) || other.esCortesia == esCortesia));
 }
 
 
 @override
 int get hashCode {
-    return Object.hash(runtimeType,folio,folioDia,tipo,estado,const DeepCollectionEquality().hash(_lineas),idMesa);
+    return Object.hash(runtimeType,folio,folioDia,tipo,estado,const DeepCollectionEquality().hash(_lineas),idMesa,numeroMesa,nombreMesero,esEnLinea,total,descuento,esCortesia);
 }
 
 @override
 String toString() {
-    return 'PedidoDetalle(folio: $folio, folioDia: $folioDia, tipo: $tipo, estado: $estado, lineas: $lineas, idMesa: $idMesa)';
+    return 'PedidoDetalle(folio: $folio, folioDia: $folioDia, tipo: $tipo, estado: $estado, lineas: $lineas, idMesa: $idMesa, numeroMesa: $numeroMesa, nombreMesero: $nombreMesero, esEnLinea: $esEnLinea, total: $total, descuento: $descuento, esCortesia: $esCortesia)';
 }
 
 
@@ -813,7 +825,7 @@ abstract mixin class _$PedidoDetalleCopyWith<$Res> implements $PedidoDetalleCopy
   factory _$PedidoDetalleCopyWith(_PedidoDetalle value, $Res Function(_PedidoDetalle) _then) = __$PedidoDetalleCopyWithImpl;
 @override @useResult
 $Res call({
- int folio, int folioDia, TipoPedido tipo, EstadoPedido estado, List<LineaPedido> lineas, int? idMesa
+ int folio, int folioDia, TipoPedido tipo, EstadoPedido estado, List<LineaPedido> lineas, int? idMesa, int? numeroMesa, String? nombreMesero, bool esEnLinea, double total, double descuento, bool esCortesia
 });
 
 
@@ -830,7 +842,7 @@ class __$PedidoDetalleCopyWithImpl<$Res>
 
 /// Create a copy of PedidoDetalle
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? folio = null,Object? folioDia = null,Object? tipo = null,Object? estado = null,Object? lineas = null,Object? idMesa = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? folio = null,Object? folioDia = null,Object? tipo = null,Object? estado = null,Object? lineas = null,Object? idMesa = freezed,Object? numeroMesa = freezed,Object? nombreMesero = freezed,Object? esEnLinea = null,Object? total = null,Object? descuento = null,Object? esCortesia = null,}) {
   return _then(_PedidoDetalle(
 folio: null == folio ? _self.folio : folio // ignore: cast_nullable_to_non_nullable
 as int,folioDia: null == folioDia ? _self.folioDia : folioDia // ignore: cast_nullable_to_non_nullable
@@ -838,7 +850,13 @@ as int,tipo: null == tipo ? _self.tipo : tipo // ignore: cast_nullable_to_non_nu
 as TipoPedido,estado: null == estado ? _self.estado : estado // ignore: cast_nullable_to_non_nullable
 as EstadoPedido,lineas: null == lineas ? _self._lineas : lineas // ignore: cast_nullable_to_non_nullable
 as List<LineaPedido>,idMesa: freezed == idMesa ? _self.idMesa : idMesa // ignore: cast_nullable_to_non_nullable
-as int?,
+as int?,numeroMesa: freezed == numeroMesa ? _self.numeroMesa : numeroMesa // ignore: cast_nullable_to_non_nullable
+as int?,nombreMesero: freezed == nombreMesero ? _self.nombreMesero : nombreMesero // ignore: cast_nullable_to_non_nullable
+as String?,esEnLinea: null == esEnLinea ? _self.esEnLinea : esEnLinea // ignore: cast_nullable_to_non_nullable
+as bool,total: null == total ? _self.total : total // ignore: cast_nullable_to_non_nullable
+as double,descuento: null == descuento ? _self.descuento : descuento // ignore: cast_nullable_to_non_nullable
+as double,esCortesia: null == esCortesia ? _self.esCortesia : esCortesia // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

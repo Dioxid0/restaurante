@@ -55,7 +55,9 @@ class _Encabezado extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // En ventanas angostas se ocultan los textos secundarios.
-    final compacto = MediaQuery.sizeOf(context).width < 900;
+    final ancho = MediaQuery.sizeOf(context).width;
+    final compacto = ancho < 900;
+    final muyAngosto = ancho < 600; // teléfono
     return Container(
       color: AppColors.navy900,
       padding: EdgeInsets.symmetric(horizontal: compacto ? 14 : 26, vertical: 14),
@@ -63,33 +65,40 @@ class _Encabezado extends StatelessWidget {
         children: [
           const BrandMark(size: 42, iniciales: 'BS'),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'El Buen Sabor',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              if (!compacto)
+          Flexible(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 const Text(
-                  'Gestión Restaurantera',
-                  style: TextStyle(color: AppColors.textFaint, fontSize: 11),
+                  'El Buen Sabor',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-            ],
+                if (!compacto)
+                  const Text(
+                    'Gestión Restaurantera',
+                    style: TextStyle(color: AppColors.textFaint, fontSize: 11),
+                  ),
+              ],
+            ),
           ),
           const Spacer(),
-          const ControlZoom(),
+          if (!muyAngosto) const ControlZoom(),
           if (!compacto && perfil.rol.esPersonal) ...[
             const SizedBox(width: 14),
             const _TurnoActivo(),
           ],
-          const SizedBox(width: 14),
-          Container(width: 1, height: 36, color: AppColors.navyBorder),
-          const SizedBox(width: 14),
+          if (!muyAngosto) ...[
+            const SizedBox(width: 14),
+            Container(width: 1, height: 36, color: AppColors.navyBorder),
+            const SizedBox(width: 14),
+          ] else
+            const SizedBox(width: 8),
           CircleAvatar(
             radius: 18,
             backgroundColor: const Color(0xFF3B2A17),
@@ -122,17 +131,24 @@ class _Encabezado extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(width: 16),
-          OutlinedButton.icon(
-            onPressed: alSalir,
-            icon: const Icon(Icons.logout, size: 16),
-            label: const Text('Salir'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFFCBD5E1),
-              side: const BorderSide(color: AppColors.navyBorder),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          SizedBox(width: muyAngosto ? 8 : 16),
+          if (muyAngosto)
+            IconButton(
+              onPressed: alSalir,
+              tooltip: 'Salir',
+              icon: const Icon(Icons.logout, size: 20, color: Color(0xFFCBD5E1)),
+            )
+          else
+            OutlinedButton.icon(
+              onPressed: alSalir,
+              icon: const Icon(Icons.logout, size: 16),
+              label: const Text('Salir'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFCBD5E1),
+                side: const BorderSide(color: AppColors.navyBorder),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
             ),
-          ),
         ],
       ),
     );

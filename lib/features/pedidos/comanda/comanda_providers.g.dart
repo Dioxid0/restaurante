@@ -95,14 +95,14 @@ final class MesasProvider
 
 String _$mesasHash() => r'5dfac5c164c807a1b1ebcc5ebc1edebe40c27b2d';
 
-/// Pedido a editar.
+/// Pedido completo (para editarlo o verlo en el modal de detalle).
 
-@ProviderFor(pedidoParaEditar)
-final pedidoParaEditarProvider = PedidoParaEditarFamily._();
+@ProviderFor(detallePedido)
+final detallePedidoProvider = DetallePedidoFamily._();
 
-/// Pedido a editar.
+/// Pedido completo (para editarlo o verlo en el modal de detalle).
 
-final class PedidoParaEditarProvider
+final class DetallePedidoProvider
     extends
         $FunctionalProvider<
           AsyncValue<PedidoDetalle>,
@@ -110,24 +110,24 @@ final class PedidoParaEditarProvider
           FutureOr<PedidoDetalle>
         >
     with $FutureModifier<PedidoDetalle>, $FutureProvider<PedidoDetalle> {
-  /// Pedido a editar.
-  PedidoParaEditarProvider._({
-    required PedidoParaEditarFamily super.from,
+  /// Pedido completo (para editarlo o verlo en el modal de detalle).
+  DetallePedidoProvider._({
+    required DetallePedidoFamily super.from,
     required int super.argument,
   }) : super(
          retry: null,
-         name: r'pedidoParaEditarProvider',
+         name: r'detallePedidoProvider',
          isAutoDispose: true,
          dependencies: null,
          $allTransitiveDependencies: null,
        );
 
   @override
-  String debugGetCreateSourceHash() => _$pedidoParaEditarHash();
+  String debugGetCreateSourceHash() => _$detallePedidoHash();
 
   @override
   String toString() {
-    return r'pedidoParaEditarProvider'
+    return r'detallePedidoProvider'
         ''
         '($argument)';
   }
@@ -141,12 +141,12 @@ final class PedidoParaEditarProvider
   @override
   FutureOr<PedidoDetalle> create(Ref ref) {
     final argument = this.argument as int;
-    return pedidoParaEditar(ref, argument);
+    return detallePedido(ref, argument);
   }
 
   @override
   bool operator ==(Object other) {
-    return other is PedidoParaEditarProvider && other.argument == argument;
+    return other is DetallePedidoProvider && other.argument == argument;
   }
 
   @override
@@ -155,26 +155,26 @@ final class PedidoParaEditarProvider
   }
 }
 
-String _$pedidoParaEditarHash() => r'98b96b06c192ec99f1ea23d2e285f63f29cbf95d';
+String _$detallePedidoHash() => r'bddda1977d8dd25e539dd9c40e9fcbc16fc7fda6';
 
-/// Pedido a editar.
+/// Pedido completo (para editarlo o verlo en el modal de detalle).
 
-final class PedidoParaEditarFamily extends $Family
+final class DetallePedidoFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<PedidoDetalle>, int> {
-  PedidoParaEditarFamily._()
+  DetallePedidoFamily._()
     : super(
         retry: null,
-        name: r'pedidoParaEditarProvider',
+        name: r'detallePedidoProvider',
         dependencies: null,
         $allTransitiveDependencies: null,
         isAutoDispose: true,
       );
 
-  /// Pedido a editar.
+  /// Pedido completo (para editarlo o verlo en el modal de detalle).
 
-  PedidoParaEditarProvider call(int folio) =>
-      PedidoParaEditarProvider._(argument: folio, from: this);
+  DetallePedidoProvider call(int folio) =>
+      DetallePedidoProvider._(argument: folio, from: this);
 
   @override
-  String toString() => r'pedidoParaEditarProvider';
+  String toString() => r'detallePedidoProvider';
 }

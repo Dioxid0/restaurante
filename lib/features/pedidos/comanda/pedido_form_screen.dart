@@ -72,7 +72,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
 
   Future<void> _cargarPedido() async {
     try {
-      final detalle = await ref.read(pedidoParaEditarProvider(widget.folio!).future);
+      final detalle = await ref.read(detallePedidoProvider(widget.folio!).future);
       if (!mounted) return;
       _controlador.cargar(detalle);
       setState(() {

@@ -19,6 +19,8 @@ abstract class ItemPedido with _$ItemPedido {
 /// Renglón de un pedido ya guardado.
 @freezed
 abstract class LineaPedido with _$LineaPedido {
+  const LineaPedido._();
+
   const factory LineaPedido({
     required int idPlatillo,
     required String nombre,
@@ -26,11 +28,15 @@ abstract class LineaPedido with _$LineaPedido {
     required int cantidad,
     String? nota,
   }) = _LineaPedido;
+
+  double get importe => precioUnitario * cantidad;
 }
 
-/// Pedido completo con sus renglones (para editarlo).
+/// Pedido completo con sus renglones (para editarlo o consultarlo).
 @freezed
 abstract class PedidoDetalle with _$PedidoDetalle {
+  const PedidoDetalle._();
+
   const factory PedidoDetalle({
     required int folio,
     required int folioDia,
@@ -38,5 +44,16 @@ abstract class PedidoDetalle with _$PedidoDetalle {
     required EstadoPedido estado,
     required List<LineaPedido> lineas,
     int? idMesa,
+    int? numeroMesa,
+    String? nombreMesero,
+    @Default(false) bool esEnLinea,
+    @Default(0.0) double total,
+    @Default(0.0) double descuento,
+    @Default(false) bool esCortesia,
   }) = _PedidoDetalle;
+
+  String get folioEtiqueta => '#PED-${folioDia.toString().padLeft(3, '0')}';
+
+  String? get mesaEtiqueta =>
+      numeroMesa == null ? null : 'M-${numeroMesa.toString().padLeft(2, '0')}';
 }
