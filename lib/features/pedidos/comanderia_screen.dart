@@ -129,63 +129,17 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Comandas del Turno',
-                        style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '${filtrados.length} pedidos encontrados',
-                        style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(
-                  width: 300,
-                  child: TextField(
-                    onChanged: (v) => setState(() {
-                      _busqueda = v;
-                      _pagina = 0;
-                    }),
-                    style: const TextStyle(fontSize: 13),
-                    decoration: InputDecoration(
-                      hintText: 'Buscar folio, mesa o empleado...',
-                      hintStyle: const TextStyle(color: AppColors.textFaint, fontSize: 13),
-                      prefixIcon: const Icon(Icons.search, size: 19, color: AppColors.textFaint),
-                      filled: true,
-                      fillColor: AppColors.pageBg,
-                      isDense: true,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(11),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(11),
-                        borderSide: const BorderSide(color: AppColors.border),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                _SelectorEstado(
-                  valor: _filtro,
-                  alCambiar: (f) => setState(() {
-                    _filtro = f;
-                    _pagina = 0;
-                  }),
-                ),
-              ],
-            ),
+          _EncabezadoLista(
+            totalEncontrados: filtrados.length,
+            filtro: _filtro,
+            alBuscar: (v) => setState(() {
+              _busqueda = v;
+              _pagina = 0;
+            }),
+            alCambiarFiltro: (f) => setState(() {
+              _filtro = f;
+              _pagina = 0;
+            }),
           ),
           PedidosTabla(
             pedidos: visibles,
@@ -208,11 +162,133 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
   }
 }
 
+/// "Comandas del Turno" + buscador + selector de estado. En pantallas angostas se apilan.
+class _EncabezadoLista extends StatelessWidget {
+  const _EncabezadoLista({
+    required this.totalEncontrados,
+    required this.filtro,
+    required this.alBuscar,
+    required this.alCambiarFiltro,
+  });
+
+  final int totalEncontrados;
+  final FiltroEstado filtro;
+  final ValueChanged<String> alBuscar;
+  final ValueChanged<FiltroEstado> alCambiarFiltro;
+
+  @override
+  Widget build(BuildContext context) {
+    final titulo = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Comandas del Turno', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+        const SizedBox(height: 3),
+        Text(
+          '$totalEncontrados pedidos encontrados',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+      ],
+    );
+
+    final buscador = TextField(
+      onChanged: alBuscar,
+      style: const TextStyle(fontSize: 13),
+      decoration: InputDecoration(
+        hintText: 'Buscar folio, mesa o empleado...',
+        hintStyle: const TextStyle(color: AppColors.textFaint, fontSize: 13),
+        prefixIcon: const Icon(Icons.search, size: 19, color: AppColors.textFaint),
+        filled: true,
+        fillColor: AppColors.pageBg,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(vertical: 13),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(11),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(11),
+          borderSide: const BorderSide(color: AppColors.border),
+        ),
+      ),
+    );
+
+    final selector = _SelectorEstado(valor: filtro, alCambiar: alCambiarFiltro);
+
+    return LayoutBuilder(
+      builder: (context, c) {
+        final angosto = c.maxWidth < 700;
+        return Padding(
+          padding: EdgeInsets.all(angosto ? 16 : 20),
+          child: angosto
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    titulo,
+                    const SizedBox(height: 12),
+                    buscador,
+                    const SizedBox(height: 10),
+                    Align(alignment: Alignment.centerLeft, child: selector),
+                  ],
+                )
+              : Row(
+                  children: [
+                    Expanded(child: titulo),
+                    SizedBox(width: 300, child: buscador),
+                    const SizedBox(width: 12),
+                    selector,
+                  ],
+                ),
+        );
+      },
+    );
+  }
+}
+
 class _Titulo extends StatelessWidget {
   const _Titulo({required this.alNuevo});
 
   /// null => el rol no puede registrar pedidos y el botón no se muestra.
   final VoidCallback? alNuevo;
+
+  @override
+  Widget build(BuildContext context) {
+    // En pantallas angostas el botón pasa debajo del título, a todo el ancho.
+    return LayoutBuilder(
+      builder: (context, c) => _construir(angosto: c.maxWidth < 620),
+    );
+  }
+
+  Widget _construir({required bool angosto}) {
+    final boton = alNuevo == null
+        ? null
+        : FilledButton.icon(
+            onPressed: alNuevo,
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Registrar Nuevo Pedido'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.amber,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+            ),
+          );
+    final titulo = _Textos(angosto: angosto);
+    if (angosto) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [titulo, if (boton != null) ...[const SizedBox(height: 14), boton]],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [Expanded(child: titulo), if (boton != null) boton],
+    );
+  }
+}
+
+class _Textos extends StatelessWidget {
+  const _Textos({required this.angosto});
+  final bool angosto;
 
   @override
   Widget build(BuildContext context) {
@@ -235,7 +311,7 @@ class _Titulo extends StatelessWidget {
               SizedBox(height: 6),
               Text(
                 'Comandería y Mesas',
-                style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
               ),
               SizedBox(height: 4),
               Text(
@@ -243,18 +319,6 @@ class _Titulo extends StatelessWidget {
                 style: TextStyle(color: AppColors.textMuted, fontSize: 13),
               ),
             ],
-          ),
-        ),
-        if (alNuevo != null)
-        FilledButton.icon(
-          onPressed: alNuevo,
-          icon: const Icon(Icons.add, size: 20),
-          label: const Text('Registrar Nuevo Pedido'),
-          style: FilledButton.styleFrom(
-            backgroundColor: AppColors.amber,
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-            textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
           ),
         ),
       ],

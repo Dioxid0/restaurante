@@ -158,6 +158,45 @@ void main() {
     expect(find.text('2'), findsWidgets); // cantidad
   });
 
+  testWidgets('escritorio: 6 columnas, sin "Mesero" ni "Tipo", con el mesero bajo el folio', (tester) async {
+    await _abrir(tester, [
+      pedidoDePrueba(folioDia: 1, mesero: 'Ana López', mesa: 3),
+      pedidoDePrueba(folioDia: 2, tipo: TipoPedido.paraLlevar),
+    ]);
+    for (final c in ['FOLIO', 'HORA', 'MESA / TIPO', 'ESTADO', 'TOTAL', 'ACCIONES']) {
+      expect(find.text(c), findsOneWidget);
+    }
+    expect(find.text('MESERO'), findsNothing);
+    expect(find.text('TIPO DE PEDIDO'), findsNothing);
+    expect(find.text('Ana López'), findsOneWidget); // subtítulo del folio
+    expect(find.text('M-03'), findsOneWidget);
+    expect(find.text('Llevar'), findsOneWidget); // para llevar sin mesa
+  });
+
+  testWidgets('pantalla angosta: tarjetas en vez de tabla, con las mismas acciones', (tester) async {
+    final repo = FakePedidoRepository([
+      pedidoDePrueba(folioDia: 7, estado: EstadoPedido.listo, mesero: 'Ana López', total: 1234.5),
+    ]);
+    await abrirApp(
+      tester,
+      auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.mesero)),
+      pedidos: repo,
+      ventana: const Size(420, 900),
+    );
+    expect(find.text('FOLIO'), findsNothing); // no hay encabezado de tabla
+    expect(find.text('#PED-007'), findsOneWidget);
+    expect(find.text('Ana López'), findsOneWidget);
+    expect(find.text(r'$1,234.50'), findsOneWidget);
+    expect(find.text('Listo'), findsOneWidget);
+
+    await tester.ensureVisible(find.byTooltip('Marcar como entregado'));
+    await tester.tap(find.byTooltip('Marcar como entregado'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Confirmar'));
+    await tester.pumpAndSettle();
+    expect(repo.cambiosEstado, [(7, EstadoPedido.entregado)]);
+  });
+
   testWidgets('"Editar" solo aparece en pedidos pendientes (RN-03)', (tester) async {
     await _abrir(tester, [
       pedidoDePrueba(folioDia: 1, estado: EstadoPedido.pendiente),
