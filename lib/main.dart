@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'features/hello/hello_screen.dart';
+
 // Se inyectan en tiempo de compilación con --dart-define (nunca en código).
 const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
 const String supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
@@ -29,9 +31,7 @@ class RestaurantApp extends StatelessWidget {
     return MaterialApp(
       title: 'Restaurante',
       theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange)),
-      home: const Scaffold(
-        body: Center(child: Text('Restaurante - Supabase conectado')),
-      ),
+      home: const HelloScreen(),
     );
   }
 }

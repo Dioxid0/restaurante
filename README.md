@@ -125,8 +125,11 @@ Las migraciones de `supabase/migrations/` se aplican automáticamente al iniciar
 .\scripts\run_dev.ps1
 ```
 El script lee la URL y la anon key de `npx supabase status` y ejecuta
-`flutter run -d windows` con `--dart-define`. Debe abrirse una ventana con el texto
-"Restaurante - Supabase conectado".
+`flutter run -d windows` con `--dart-define`. Debe abrirse una ventana con una palomita verde y el texto
+**"¡Hola desde Supabase local!"**. Ese mensaje se lee de la tabla `hello_check` de tu base
+local (migración `hello_world`), así que confirma que Flutter, Riverpod, Supabase, las
+migraciones y RLS funcionan. Si ves un error en rojo, revisa que Supabase esté corriendo
+(`npx supabase status`) y que las migraciones estén aplicadas (`npx supabase db reset`).
 
 Si PowerShell bloquea el script ("la ejecución de scripts está deshabilitada"):
 ```powershell
