@@ -7,7 +7,7 @@
 --   mesero   / Mesero#2026
 --   chef     / Chef#2026
 --   gerente  / Gerente#2026   (PIN del gerente: 1234)
---   cliente  / Cliente#2026   (cliente@restaurante.local)
+--   cliente@correo.com / Cliente#2026   (cliente; entra con su correo)
 -- =====================================================================
 
 create function pg_temp.crear_usuario(
@@ -47,7 +47,7 @@ select id_empleado, extensions.crypt('1234', extensions.gen_salt('bf'))
 from public.empleado where usuario = 'gerente';
 
 -- Cliente de prueba (el trigger handle_new_user crea su ficha en `cliente`)
-select pg_temp.crear_usuario('cliente@restaurante.local', 'Cliente#2026', null, 'Cliente de Prueba');
+select pg_temp.crear_usuario('cliente@correo.com', 'Cliente#2026', null, 'Cliente de Prueba');
 
 -- Meseros adicionales (sin acceso al sistema; solo para datos de demostración)
 insert into public.empleado (nombre, rol, turno, usuario) values

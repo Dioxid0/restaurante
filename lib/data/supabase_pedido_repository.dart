@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/entities/pedido.dart';
+import '../domain/errors.dart';
 import '../domain/repositories/pedido_repository.dart';
 
 class SupabasePedidoRepository implements PedidoRepository {
@@ -49,10 +50,15 @@ class SupabasePedidoRepository implements PedidoRepository {
 
   @override
   Future<void> actualizarEstado(int folio, EstadoPedido nuevoEstado) async {
-    await _client
-        .from('pedido')
-        .update({'estado': nuevoEstado.valorBd})
-        .eq('folio', folio);
+    try {
+      await _client
+          .from('pedido')
+          .update({'estado': nuevoEstado.valorBd})
+          .eq('folio', folio);
+    } on PostgrestException catch (e) {
+      // Los mensajes de las reglas (RN-03, etc.) vienen en español desde la base.
+      throw ErrorDeNegocio(e.message);
+    }
   }
 
   /// Fecha operativa de hoy (yyyy-MM-dd) según el reloj del equipo.

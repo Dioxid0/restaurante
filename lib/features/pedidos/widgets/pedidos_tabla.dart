@@ -16,10 +16,14 @@ class PedidosTabla extends StatelessWidget {
     required this.alCambiarEstado,
     required this.alEditar,
     required this.alVer,
+    this.puedeOperar = true,
   });
 
   final List<PedidoResumen> pedidos;
   final DateTime ahora;
+
+  /// Mesero y gerente operan pedidos (editar, entregar, completar); el chef solo los consulta.
+  final bool puedeOperar;
   final AlCambiarEstado alCambiarEstado;
   final ValueChanged<PedidoResumen> alEditar;
   final ValueChanged<PedidoResumen> alVer;
@@ -117,7 +121,7 @@ class PedidosTabla extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            if (p.estado == EstadoPedido.pendiente) ...[
+            if (puedeOperar && p.estado == EstadoPedido.pendiente) ...[
               OutlinedButton.icon(
                 onPressed: () => alEditar(p),
                 icon: const Icon(Icons.edit_outlined, size: 15),
@@ -134,7 +138,7 @@ class PedidosTabla extends StatelessWidget {
               ),
               const SizedBox(width: 6),
             ],
-            if (p.estado == EstadoPedido.listo) ...[
+            if (puedeOperar && p.estado == EstadoPedido.listo) ...[
               BotonIcono(
                 icono: Icons.check_circle_outline,
                 tooltip: 'Marcar como entregado',
@@ -145,7 +149,7 @@ class PedidosTabla extends StatelessWidget {
               ),
               const SizedBox(width: 6),
             ],
-            if (p.estado == EstadoPedido.entregado) ...[
+            if (puedeOperar && p.estado == EstadoPedido.entregado) ...[
               BotonIcono(
                 icono: Icons.check_circle_outline,
                 tooltip: 'Marcar como completado',

@@ -46,48 +46,43 @@ final class SesionActivaProvider
 
 String _$sesionActivaHash() => r'ca35e15f4fe77116855d21dd21c4c8defce6789c';
 
-/// Empleado de la sesión actual (null si no hay sesión o no es personal).
+/// Perfil de la sesión actual (null si no hay sesión).
 
-@ProviderFor(empleadoActual)
-final empleadoActualProvider = EmpleadoActualProvider._();
+@ProviderFor(perfilActual)
+final perfilActualProvider = PerfilActualProvider._();
 
-/// Empleado de la sesión actual (null si no hay sesión o no es personal).
+/// Perfil de la sesión actual (null si no hay sesión).
 
-final class EmpleadoActualProvider
-    extends
-        $FunctionalProvider<
-          AsyncValue<Empleado?>,
-          Empleado?,
-          FutureOr<Empleado?>
-        >
-    with $FutureModifier<Empleado?>, $FutureProvider<Empleado?> {
-  /// Empleado de la sesión actual (null si no hay sesión o no es personal).
-  EmpleadoActualProvider._()
+final class PerfilActualProvider
+    extends $FunctionalProvider<AsyncValue<Perfil?>, Perfil?, FutureOr<Perfil?>>
+    with $FutureModifier<Perfil?>, $FutureProvider<Perfil?> {
+  /// Perfil de la sesión actual (null si no hay sesión).
+  PerfilActualProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'empleadoActualProvider',
+        name: r'perfilActualProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$empleadoActualHash();
+  String debugGetCreateSourceHash() => _$perfilActualHash();
 
   @$internal
   @override
-  $FutureProviderElement<Empleado?> $createElement($ProviderPointer pointer) =>
+  $FutureProviderElement<Perfil?> $createElement($ProviderPointer pointer) =>
       $FutureProviderElement(pointer);
 
   @override
-  FutureOr<Empleado?> create(Ref ref) {
-    return empleadoActual(ref);
+  FutureOr<Perfil?> create(Ref ref) {
+    return perfilActual(ref);
   }
 }
 
-String _$empleadoActualHash() => r'20aab3f1dc5337938319527b2398676bb869a631';
+String _$perfilActualHash() => r'5fad6b8721766b868633d4ed6c9b341d02cdd97b';
 
 /// Estado del formulario de login. keepAlive para conservar el mensaje de
 /// error si la pantalla se reconstruye durante el cierre de sesión.
@@ -120,7 +115,7 @@ final class LoginControllerProvider
   LoginController create() => LoginController();
 }
 
-String _$loginControllerHash() => r'e73fd0012b34ae962bcdfa9c3266d460c9cc02d6';
+String _$loginControllerHash() => r'c60ef5ebb588614fc6bb9051843bbdce971ff3ef';
 
 /// Estado del formulario de login. keepAlive para conservar el mensaje de
 /// error si la pantalla se reconstruye durante el cierre de sesión.
@@ -136,6 +131,57 @@ abstract class _$LoginController extends $AsyncNotifier<void> {
             as $ClassProviderElement<
               AnyNotifier<AsyncValue<void>, void>,
               AsyncValue<void>,
+              Object?,
+              Object?
+            >;
+    return element.handleCreate(ref, build);
+  }
+}
+
+/// Registro de clientes. El estado es `true` si falta confirmar el correo.
+
+@ProviderFor(RegistroController)
+final registroControllerProvider = RegistroControllerProvider._();
+
+/// Registro de clientes. El estado es `true` si falta confirmar el correo.
+final class RegistroControllerProvider
+    extends $AsyncNotifierProvider<RegistroController, bool?> {
+  /// Registro de clientes. El estado es `true` si falta confirmar el correo.
+  RegistroControllerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'registroControllerProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$registroControllerHash();
+
+  @$internal
+  @override
+  RegistroController create() => RegistroController();
+}
+
+String _$registroControllerHash() =>
+    r'6595fd06b990c52d19cb3f49cbdbbed5bd6efa6b';
+
+/// Registro de clientes. El estado es `true` si falta confirmar el correo.
+
+abstract class _$RegistroController extends $AsyncNotifier<bool?> {
+  FutureOr<bool?> build();
+  @$mustCallSuper
+  @override
+  WhenComplete runBuild() {
+    final ref = this.ref as $Ref<AsyncValue<bool?>, bool?>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool?>, bool?>,
+              AsyncValue<bool?>,
               Object?,
               Object?
             >;

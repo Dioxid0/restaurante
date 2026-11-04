@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'core/ui/zoom.dart';
 
 // Se inyectan en tiempo de compilación con --dart-define (nunca en código).
 const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -37,6 +38,8 @@ class RestaurantApp extends ConsumerWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       routerConfig: ref.watch(appRouterProvider),
+      // Escala automática en pantallas grandes + zoom del usuario (Ctrl +/−/0).
+      builder: (context, child) => EscalaInterfaz(child: child ?? const SizedBox.shrink()),
     );
   }
 }

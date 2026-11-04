@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/pedido.dart';
+import '../../domain/entities/perfil.dart';
+import '../../domain/errors.dart';
+import '../auth/auth_providers.dart';
 import 'pedidos_providers.dart';
 import 'widgets/pedidos_tabla.dart';
 
@@ -57,14 +60,8 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     try {
       await ref.read(pedidosDelDiaProvider.notifier).cambiarEstado(p.folio, nuevo);
     } catch (e) {
-      _aviso(_mensajeDeError(e));
+      _aviso(mensajeDeError(e));
     }
-  }
-
-  String _mensajeDeError(Object e) {
-    final texto = e.toString();
-    final i = texto.indexOf('message:');
-    return i >= 0 ? texto.substring(i + 8).split(',').first.trim() : 'No se pudo completar la acción';
   }
 
   List<PedidoResumen> _filtrar(List<PedidoResumen> todos) {
@@ -82,19 +79,26 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
   Widget build(BuildContext context) {
     final pedidos = ref.watch(pedidosDelDiaProvider);
     final ahora = ref.watch(relojProvider).value ?? DateTime.now();
+    final rol = ref.watch(perfilActualProvider).value?.rol;
+    // Mesero y gerente operan pedidos; el chef solo los consulta (su flujo va en "Cocina").
+    final puedeOperar = rol == RolUsuario.mesero || rol == RolUsuario.gerente;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 26, 28, 28),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1400),
+          constraints: const BoxConstraints(maxWidth: 1500),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _Titulo(alNuevo: () => _aviso('Pantalla "Registrar pedido" pendiente de diseño')),
+              _Titulo(
+                alNuevo: puedeOperar
+                    ? () => _aviso('Pantalla "Registrar pedido" pendiente de diseño')
+                    : null,
+              ),
               const SizedBox(height: 22),
               if (pedidos.hasValue)
-                _contenido(pedidos.requireValue, ahora)
+                _contenido(pedidos.requireValue, ahora, puedeOperar)
               else if (pedidos.hasError)
                 _Error(alReintentar: () => ref.invalidate(pedidosDelDiaProvider))
               else
@@ -109,7 +113,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     );
   }
 
-  Widget _contenido(List<PedidoResumen> todos, DateTime ahora) {
+  Widget _contenido(List<PedidoResumen> todos, DateTime ahora, bool puedeOperar) {
     final filtrados = _filtrar(todos);
     final paginas = (filtrados.length / _porPagina).ceil().clamp(1, 1 << 30);
     final pagina = _pagina.clamp(0, paginas - 1);
@@ -186,6 +190,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
           PedidosTabla(
             pedidos: visibles,
             ahora: ahora,
+            puedeOperar: puedeOperar,
             alCambiarEstado: _cambiarEstado,
             alEditar: (p) => _aviso('Pantalla "Editar pedido ${p.folioEtiqueta}" pendiente de diseño'),
             alVer: (p) => _aviso('Pantalla "Detalle ${p.folioEtiqueta}" pendiente de diseño'),
@@ -205,7 +210,9 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
 
 class _Titulo extends StatelessWidget {
   const _Titulo({required this.alNuevo});
-  final VoidCallback alNuevo;
+
+  /// null => el rol no puede registrar pedidos y el botón no se muestra.
+  final VoidCallback? alNuevo;
 
   @override
   Widget build(BuildContext context) {
@@ -238,6 +245,7 @@ class _Titulo extends StatelessWidget {
             ],
           ),
         ),
+        if (alNuevo != null)
         FilledButton.icon(
           onPressed: alNuevo,
           icon: const Icon(Icons.add, size: 20),

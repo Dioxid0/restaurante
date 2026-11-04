@@ -16,8 +16,24 @@ Una sola sucursal. Diagramas: [modelo-er.webp](modelo-er.webp) y [casos-de-uso.w
 | chef | Ve comandas (CU-03), actualiza estado (CU-15) |
 | gerente | Todo lo anterior + reporte (CU-07), descuentos/cortesías (CU-09), PIN de autorización |
 
-Los empleados inician sesión con `usuario` + contraseña (Supabase Auth; internamente `usuario@restaurante.local`).
+Todos usan el mismo login. El personal entra con `usuario` + contraseña (Supabase Auth; internamente
+`usuario normalizado@restaurante.local`, p. ej. "Juan Pérez" → `juan.perez@restaurante.local`); los clientes, con su correo.
+Los clientes se registran solos (`/registro`); **el registro público siempre crea clientes**.
+Solo el gerente crea cuentas de personal (`crear_empleado`, desde Gerencia).
 Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
+
+| Rol | Secciones |
+|---|---|
+| mesero | Inicio |
+| chef | Inicio, Cocina |
+| gerente | Inicio, Cocina, Gerencia |
+| cliente | Inicio |
+
+### Modelo de seguridad
+- La autorización la decide la base (RLS, triggers y RPC con SECURITY DEFINER); la app solo oculta secciones por comodidad.
+- El rol sale de `empleado`/`cliente` por `auth.uid()`, nunca de datos que envíe el cliente (el registro ignora cualquier `rol`).
+- `@restaurante.local` está reservado al personal; el registro público lo rechaza.
+- Pendiente para producción: confirmación de correo, límites de intentos/CAPTCHA en Auth y MFA para gerentes.
 
 ## Estados
 - **pedido**: `pendiente → en_preparacion → listo → entregado → completado`, o `cancelado`.

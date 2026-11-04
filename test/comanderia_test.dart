@@ -1,28 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:restaurant_app/data/repository_providers.dart';
 import 'package:restaurant_app/domain/entities/pedido.dart';
-import 'package:restaurant_app/features/pedidos/pedidos_providers.dart';
-import 'package:restaurant_app/main.dart';
+import 'package:restaurant_app/domain/entities/perfil.dart';
 
+import 'helpers/app.dart';
 import 'helpers/fakes.dart';
 
 Future<FakePedidoRepository> _abrir(WidgetTester tester, List<PedidoResumen> datos) async {
-  tester.view.physicalSize = const Size(1500, 1000);
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.resetPhysicalSize);
-
   final pedidos = FakePedidoRepository(datos);
-  await tester.pumpWidget(ProviderScope(
-    overrides: [
-      authRepositoryProvider.overrideWithValue(FakeAuthRepository(conSesion: true)),
-      pedidoRepositoryProvider.overrideWithValue(pedidos),
-      relojProvider.overrideWith((ref) => Stream.value(DateTime.now())),
-    ],
-    child: const RestaurantApp(),
-  ));
-  await tester.pumpAndSettle();
+  await abrirApp(
+    tester,
+    auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.mesero)),
+    pedidos: pedidos,
+    ventana: const Size(1500, 1000),
+  );
   return pedidos;
 }
 

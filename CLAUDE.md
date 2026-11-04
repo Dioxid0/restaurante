@@ -35,9 +35,16 @@
 - Al cambiar el esquema: nueva migración (no editar las ya subidas a `main`) y actualizar `docs/dominio.md`.
 
 ## Estado de la app (lo ya construido)
-- Login (`features/auth`): usuario + contraseña → Supabase Auth con `usuario@restaurante.local`. Solo entran empleados (si la cuenta no está en `empleado`, se cierra la sesión). Sin selector de rol: el rol sale de la base.
-- Router (`core/router/app_router.dart`): go_router con redirect según sesión. `/` (Home) elige la pantalla por rol: mesero → Comandería; chef y gerente → "en construcción".
-- Comandería del mesero (`features/pedidos`): pedidos del día, filtro de estado (por defecto "Activos"), búsqueda, paginación de 5, tiempo real. "Registrar", "Editar" y "Ver detalle" son stubs hasta recibir esas pantallas de Figma.
+- **Un solo login y una sola app para todos** (`features/auth`): campo "Usuario o correo electrónico". Si lleva `@` es el correo de un cliente; si no, es un usuario de personal ("Juan Perez" → `juan.perez@restaurante.local`, ver `core/utils/usuario.dart`, que debe coincidir con `normalizar_usuario()` en SQL). Sin selector de rol: el rol sale de la base (`rol_actual()`).
+- **Registro** (`/registro`): solo crea clientes (correo + contraseña). Nunca se envía un rol; el servidor siempre crea "cliente". El dominio `@restaurante.local` está reservado al personal y bloqueado en el registro.
+- **Cuentas de personal**: solo el gerente las crea, desde Gerencia → "Nueva cuenta", con la RPC `crear_empleado` (SECURITY DEFINER; escribe en `auth.users` como lo hace el seed). No existe forma de crear empleados desde el registro público.
+- **Navegación por rol** (`core/router/destinos.dart`): mesero = Inicio; chef = Inicio + Cocina; gerente = Inicio + Cocina + Gerencia; cliente = Inicio. Tabs bajo el encabezado (se ocultan si hay una sola). Cada ruta está protegida con `AccesoPorRol`, pero eso es solo UX: la seguridad real es RLS/triggers.
+- **Inicio**: el personal ve la Comandería (chef y gerente la ven igual; solo mesero y gerente operan pedidos). El cliente ve un marcador.
+- **Cocina** (marcador) y **Gerencia** (cuentas de personal, diseño provisional sin Figma).
+- **Zoom y escala** (`core/ui/zoom.dart`): escala automática en ventanas > 1500 px lógicos + zoom del usuario (Ctrl +/−/0 o botones del encabezado), guardado en shared_preferences.
+- Router (`core/router/app_router.dart`): go_router con ShellRoute y redirect según sesión.
+- Comandería (`features/pedidos`): pedidos del día, filtro de estado (por defecto "Activos"), búsqueda, paginación de 5, tiempo real. "Registrar", "Editar" y "Ver detalle" son stubs hasta recibir esas pantallas de Figma.
+- Seguridad: nunca confiar en la UI para permisos; toda regla va en la base. Las pruebas con teclado/mouse simulados sobre el escritorio están prohibidas (usar `flutter test`).
 - Diseño: tema en `core/theme` (paleta amber + navy estimada de las capturas de Figma); marco con encabezado en `presentation/layouts/app_shell.dart`.
 - Pruebas: `test/` usa repositorios falsos (`test/helpers/fakes.dart`) con `overrideWithValue`; nunca se conecta a Supabase.
 - Consultas con varias FK hacia la misma tabla (p. ej. `pedido`→`empleado`) deben indicar el nombre de la FK: `empleado!pedido_id_empleado_fkey(nombre)`.

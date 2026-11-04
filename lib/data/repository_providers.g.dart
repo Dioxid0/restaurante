@@ -95,3 +95,51 @@ final class PedidoRepositoryProvider
 }
 
 String _$pedidoRepositoryHash() => r'767e146f7146158b2e9b37a20dea9f4e70dab312';
+
+@ProviderFor(empleadoRepository)
+final empleadoRepositoryProvider = EmpleadoRepositoryProvider._();
+
+final class EmpleadoRepositoryProvider
+    extends
+        $FunctionalProvider<
+          EmpleadoRepository,
+          EmpleadoRepository,
+          EmpleadoRepository
+        >
+    with $Provider<EmpleadoRepository> {
+  EmpleadoRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'empleadoRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$empleadoRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<EmpleadoRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EmpleadoRepository create(Ref ref) {
+    return empleadoRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EmpleadoRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EmpleadoRepository>(value),
+    );
+  }
+}
+
+String _$empleadoRepositoryHash() =>
+    r'047325c07d99dee4a27953c5c75caf7f4b738616';

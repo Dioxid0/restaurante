@@ -125,9 +125,10 @@ Las migraciones de `supabase/migrations/` se aplican automáticamente al iniciar
 .\scripts\run_dev.ps1
 ```
 El script lee la URL y la anon key de `npx supabase status` y ejecuta
-`flutter run -d windows` con `--dart-define`. Debe abrirse la pantalla **Iniciar Sesión**. Entra con un usuario de prueba (ver
-`supabase/seed.sql`; por ejemplo el del mesero) y deberías ver la **Comandería y Mesas** con
-pedidos de ejemplo. Eso confirma que Flutter, Riverpod, Supabase Auth, las migraciones y RLS funcionan.
+`flutter run -d windows` con `--dart-define`. Debe abrirse la pantalla **Iniciar Sesión** (la misma para meseros, chefs, gerentes y clientes).
+Entra con un usuario de prueba (ver `supabase/seed.sql`; por ejemplo el del mesero) y deberías ver la
+**Comandería y Mesas** con pedidos de ejemplo. El gerente además ve las pestañas Cocina y Gerencia.
+Los clientes se registran desde "Crear cuenta". Zoom: Ctrl + / Ctrl − / Ctrl 0 o los botones del encabezado. Eso confirma que Flutter, Riverpod, Supabase Auth, las migraciones y RLS funcionan.
 Si ves "No se pudieron cargar los pedidos", revisa que Supabase esté corriendo
 (`npx supabase status`) y que las migraciones y el seed estén aplicados (`npx supabase db reset`).
 

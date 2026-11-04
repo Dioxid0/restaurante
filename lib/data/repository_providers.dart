@@ -2,8 +2,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../domain/repositories/auth_repository.dart';
+import '../domain/repositories/empleado_repository.dart';
 import '../domain/repositories/pedido_repository.dart';
 import 'supabase_auth_repository.dart';
+import 'supabase_empleado_repository.dart';
 import 'supabase_pedido_repository.dart';
 
 part 'repository_providers.g.dart';
@@ -18,3 +20,7 @@ AuthRepository authRepository(Ref ref) =>
 @Riverpod(keepAlive: true)
 PedidoRepository pedidoRepository(Ref ref) =>
     SupabasePedidoRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+EmpleadoRepository empleadoRepository(Ref ref) =>
+    SupabaseEmpleadoRepository(Supabase.instance.client);
