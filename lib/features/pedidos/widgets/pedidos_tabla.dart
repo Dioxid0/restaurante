@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formato.dart';
 import '../../../domain/entities/pedido.dart';
+import 'boton_confirmable.dart';
 import 'pedido_chips.dart';
 
 typedef AlCambiarEstado = void Function(PedidoResumen pedido, EstadoPedido nuevo);
@@ -139,24 +140,28 @@ class PedidosTabla extends StatelessWidget {
               const SizedBox(width: 6),
             ],
             if (puedeOperar && p.estado == EstadoPedido.listo) ...[
-              BotonIcono(
+              BotonConfirmable(
                 icono: Icons.check_circle_outline,
                 tooltip: 'Marcar como entregado',
+                titulo: '¿Marcar como Entregado?',
+                detalle: p.folioEtiqueta,
                 color: const Color(0xFF2563EB),
                 fondo: const Color(0xFFEFF6FF),
                 borde: const Color(0xFFBFDBFE),
-                alPresionar: () => alCambiarEstado(p, EstadoPedido.entregado),
+                alConfirmar: () => alCambiarEstado(p, EstadoPedido.entregado),
               ),
               const SizedBox(width: 6),
             ],
             if (puedeOperar && p.estado == EstadoPedido.entregado) ...[
-              BotonIcono(
+              BotonConfirmable(
                 icono: Icons.check_circle_outline,
                 tooltip: 'Marcar como completado',
+                titulo: '¿Marcar como Completado?',
+                detalle: p.folioEtiqueta,
                 color: const Color(0xFF047857),
                 fondo: const Color(0xFFECFDF5),
                 borde: const Color(0xFF6EE7B7),
-                alPresionar: () => alCambiarEstado(p, EstadoPedido.completado),
+                alConfirmar: () => alCambiarEstado(p, EstadoPedido.completado),
               ),
               const SizedBox(width: 6),
             ],

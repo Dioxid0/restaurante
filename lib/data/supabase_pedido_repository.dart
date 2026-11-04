@@ -94,7 +94,9 @@ class SupabasePedidoRepository implements PedidoRepository {
     try {
       final f = await _client
           .from('pedido')
-          .select('folio, folio_dia, tipo_pedido, estado, id_mesa, '
+          .select('folio, folio_dia, tipo_pedido, origen, estado, id_mesa, total, descuento, '
+              'es_cortesia, mesa:id_mesa(numero_mesa), '
+              'mesero:empleado!pedido_id_empleado_fkey(nombre), '
               'detalle_pedido(id_detalle, id_platillo, cantidad, precio_unitario, '
               'notas_especiales, platillo:id_platillo(nombre))')
           .eq('folio', folio)
@@ -107,6 +109,12 @@ class SupabasePedidoRepository implements PedidoRepository {
         tipo: TipoPedido.desdeBd(f['tipo_pedido'] as String),
         estado: EstadoPedido.desdeBd(f['estado'] as String),
         idMesa: f['id_mesa'] as int?,
+        numeroMesa: (f['mesa'] as Map<String, dynamic>?)?['numero_mesa'] as int?,
+        nombreMesero: (f['mesero'] as Map<String, dynamic>?)?['nombre'] as String?,
+        esEnLinea: f['origen'] == 'en_linea',
+        total: (f['total'] as num).toDouble(),
+        descuento: (f['descuento'] as num).toDouble(),
+        esCortesia: f['es_cortesia'] as bool,
         lineas: [
           for (final r in renglones)
             LineaPedido(

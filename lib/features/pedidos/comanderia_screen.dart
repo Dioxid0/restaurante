@@ -7,6 +7,7 @@ import '../../domain/entities/pedido.dart';
 import '../../domain/entities/perfil.dart';
 import '../../domain/errors.dart';
 import '../auth/auth_providers.dart';
+import 'detalle/detalle_pedido_dialog.dart';
 import 'pedidos_providers.dart';
 import 'widgets/pedidos_tabla.dart';
 
@@ -192,7 +193,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             puedeOperar: puedeOperar,
             alCambiarEstado: _cambiarEstado,
             alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
-            alVer: (p) => _aviso('Pantalla "Detalle ${p.folioEtiqueta}" pendiente de diseño'),
+            alVer: (p) => mostrarDetallePedido(context, p.folio),
           ),
           _Paginador(
             mostrando: visibles.length,
