@@ -25,6 +25,15 @@
   `flutter run -d windows --dart-define=SUPABASE_URL=<url> --dart-define=SUPABASE_ANON_KEY=<anon_key>`
 - Obtener valores locales: `npx supabase status`.
 
+## Dominio y base de datos
+- Contexto completo, estados, reglas (RN-03, RN-07, RNF-04) y contrato con la app: `docs/dominio.md`.
+  Diagramas originales: `docs/modelo-er.webp` y `docs/casos-de-uso.webp`. Mantener los nombres del E-R.
+- Esquema en `supabase/migrations/` (tablas → reglas y RLS). Datos de desarrollo y usuarios de prueba en `supabase/seed.sql` (se aplican con `npx supabase db reset`).
+- Roles: cliente, mesero, chef, gerente. La lógica sensible vive en la base (triggers + RPC), no en Flutter.
+- Los pedidos se crean con la RPC `crear_pedido`; no hay INSERT directo en `pedido`.
+- Fuera de alcance por indicación de la docente: cobros/caja e inventario.
+- Al cambiar el esquema: nueva migración (no editar las ya subidas a `main`) y actualizar `docs/dominio.md`.
+
 ## Estructura de lib/
 - `core/`: configuración, tema, constantes, utilidades, errores.
 - `data/`: repositorios, fuentes de datos (Supabase), DTOs.

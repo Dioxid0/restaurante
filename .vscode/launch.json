@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Restaurante (Windows, Supabase local)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows",
+      "args": ["--dart-define-from-file=.env.json"]
+    },
+    {
+      "name": "Restaurante (Windows, profile)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows",
+      "flutterMode": "profile",
+      "args": ["--dart-define-from-file=.env.json"]
+    }
+  ]
+}

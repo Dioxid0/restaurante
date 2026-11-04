@@ -136,11 +136,29 @@ Si PowerShell bloquea el script ("la ejecución de scripts está deshabilitada")
 Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 ```
 
+**Desde VS Code (botón Run / F5):** genera una vez el archivo local de claves (ignorado por Git)
+con Supabase corriendo:
+```powershell
+.\scripts\setup_env.ps1
+```
+Luego abre **Ejecutar y depurar** (Ctrl+Shift+D), elige **"Restaurante (Windows, Supabase local)"**
+y pulsa F5 (o el botón verde). También sirve el botón ▶ sobre `main()` en `lib/main.dart`
+solo si agregas el `--dart-define-from-file=.env.json` en `.vscode/launch.json`; usa F5.
+Requiere la extensión Flutter instalada. Repite `setup_env.ps1` si reinicias Supabase con claves nuevas.
+
 Manera manual equivalente (sustituye los valores de `npx supabase status`, sin `<` `>`):
 ```powershell
 flutter run -d windows --dart-define=SUPABASE_URL=http://127.0.0.1:54321 --dart-define=SUPABASE_ANON_KEY=PEGA_AQUI_LA_ANON_KEY
 ```
 Con VS Code, el mismo `--dart-define` puede ponerse en `.vscode/launch.json` (args), **sin versionar claves**.
+
+### Usuarios de prueba
+La base local trae datos de ejemplo (mesas, menú y 4 usuarios: mesero, chef, gerente y cliente).
+Las credenciales están en el encabezado de `supabase/seed.sql`. Para volver al estado inicial:
+```powershell
+npx supabase db reset
+```
+Dominio, roles y reglas de negocio: [docs/dominio.md](docs/dominio.md).
 
 ### 13. Detener todo al terminar
 ```powershell
