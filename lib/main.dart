@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-import 'features/hello/hello_screen.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
 
 // Se inyectan en tiempo de compilación con --dart-define (nunca en código).
 const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
@@ -20,18 +21,22 @@ Future<void> main() async {
 
   await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
 
-  runApp(const ProviderScope(child: RestaurantApp()));
+  runApp(const ProviderScope(retry: _sinReintentos, child: RestaurantApp()));
 }
 
-class RestaurantApp extends StatelessWidget {
+/// Riverpod 3 reintenta providers fallidos por defecto; aquí preferimos mostrar el error.
+Duration? _sinReintentos(int intento, Object error) => null;
+
+class RestaurantApp extends ConsumerWidget {
   const RestaurantApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Restaurante',
-      theme: ThemeData(colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepOrange)),
-      home: const HelloScreen(),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return MaterialApp.router(
+      title: 'El Buen Sabor',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.light,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

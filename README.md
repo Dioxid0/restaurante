@@ -1,4 +1,4 @@
-# Restaurante (proyecto escolar)
+﻿# Restaurante (proyecto escolar)
 
 Sistema para restaurante: app de escritorio (Windows) primero, móvil (Android) después.
 Stack: **Flutter + Supabase** (Supabase corre **local** en Docker durante el desarrollo).
@@ -125,11 +125,11 @@ Las migraciones de `supabase/migrations/` se aplican automáticamente al iniciar
 .\scripts\run_dev.ps1
 ```
 El script lee la URL y la anon key de `npx supabase status` y ejecuta
-`flutter run -d windows` con `--dart-define`. Debe abrirse una ventana con una palomita verde y el texto
-**"¡Hola desde Supabase local!"**. Ese mensaje se lee de la tabla `hello_check` de tu base
-local (migración `hello_world`), así que confirma que Flutter, Riverpod, Supabase, las
-migraciones y RLS funcionan. Si ves un error en rojo, revisa que Supabase esté corriendo
-(`npx supabase status`) y que las migraciones estén aplicadas (`npx supabase db reset`).
+`flutter run -d windows` con `--dart-define`. Debe abrirse la pantalla **Iniciar Sesión**. Entra con un usuario de prueba (ver
+`supabase/seed.sql`; por ejemplo el del mesero) y deberías ver la **Comandería y Mesas** con
+pedidos de ejemplo. Eso confirma que Flutter, Riverpod, Supabase Auth, las migraciones y RLS funcionan.
+Si ves "No se pudieron cargar los pedidos", revisa que Supabase esté corriendo
+(`npx supabase status`) y que las migraciones y el seed estén aplicados (`npx supabase db reset`).
 
 Si PowerShell bloquea el script ("la ejecución de scripts está deshabilitada"):
 ```powershell
@@ -191,7 +191,7 @@ npx supabase stop
 
 ### Código generado (Riverpod / freezed / json)
 ```powershell
-dart run build_runner build --delete-conflicting-outputs
+dart run build_runner build
 ```
 (o `watch` en lugar de `build` mientras desarrollas).
 

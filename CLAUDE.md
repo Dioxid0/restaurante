@@ -1,10 +1,10 @@
-# Sistema de restaurante (proyecto escolar)
+﻿# Sistema de restaurante (proyecto escolar)
 
 ## Stack y decisiones
 - Flutter (Dart) + Supabase. Paquete `restaurant_app`, org `com.escuela`.
 - Estado: Riverpod (`flutter_riverpod`, `riverpod_annotation` + `riverpod_generator`).
 - Navegación: `go_router`. Modelos: `freezed` + `json_serializable`.
-- Código generado con `dart run build_runner build --delete-conflicting-outputs`.
+- Código generado con `dart run build_runner build`.
 - `custom_lint`/`riverpod_lint` omitidos: incompatibles con Riverpod 3 / freezed 3 (revisar más adelante).
 - El proyecto Flutter vive en la raíz del repo (sin subcarpeta).
 
@@ -33,6 +33,15 @@
 - Los pedidos se crean con la RPC `crear_pedido`; no hay INSERT directo en `pedido`.
 - Fuera de alcance por indicación de la docente: cobros/caja e inventario.
 - Al cambiar el esquema: nueva migración (no editar las ya subidas a `main`) y actualizar `docs/dominio.md`.
+
+## Estado de la app (lo ya construido)
+- Login (`features/auth`): usuario + contraseña → Supabase Auth con `usuario@restaurante.local`. Solo entran empleados (si la cuenta no está en `empleado`, se cierra la sesión). Sin selector de rol: el rol sale de la base.
+- Router (`core/router/app_router.dart`): go_router con redirect según sesión. `/` (Home) elige la pantalla por rol: mesero → Comandería; chef y gerente → "en construcción".
+- Comandería del mesero (`features/pedidos`): pedidos del día, filtro de estado (por defecto "Activos"), búsqueda, paginación de 5, tiempo real. "Registrar", "Editar" y "Ver detalle" son stubs hasta recibir esas pantallas de Figma.
+- Diseño: tema en `core/theme` (paleta amber + navy estimada de las capturas de Figma); marco con encabezado en `presentation/layouts/app_shell.dart`.
+- Pruebas: `test/` usa repositorios falsos (`test/helpers/fakes.dart`) con `overrideWithValue`; nunca se conecta a Supabase.
+- Consultas con varias FK hacia la misma tabla (p. ej. `pedido`→`empleado`) deben indicar el nombre de la FK: `empleado!pedido_id_empleado_fkey(nombre)`.
+- Para probar login a mano: `.\scripts\run_dev.ps1` y usuarios del seed.
 
 ## Estructura de lib/
 - `core/`: configuración, tema, constantes, utilidades, errores.

@@ -38,7 +38,7 @@ end $$;
 
 -- Empleados
 insert into public.empleado (user_id, nombre, rol, turno, usuario) values
-  (pg_temp.crear_usuario('mesero@restaurante.local',  'Mesero#2026',  'mesero',  'Mesero'),  'Mesero',  'mesero',  'matutino',   'mesero'),
+  (pg_temp.crear_usuario('mesero@restaurante.local',  'Mesero#2026',  'mesero',  'Juan Pérez'),  'Juan Pérez',  'mesero',  'matutino',   'mesero'),
   (pg_temp.crear_usuario('chef@restaurante.local',    'Chef#2026',    'chef',    'Chef'),    'Chef',    'chef',    'matutino',   'chef'),
   (pg_temp.crear_usuario('gerente@restaurante.local', 'Gerente#2026', 'gerente', 'Gerente'), 'Gerente', 'gerente', 'matutino',   'gerente');
 
@@ -49,9 +49,15 @@ from public.empleado where usuario = 'gerente';
 -- Cliente de prueba (el trigger handle_new_user crea su ficha en `cliente`)
 select pg_temp.crear_usuario('cliente@restaurante.local', 'Cliente#2026', null, 'Cliente de Prueba');
 
+-- Meseros adicionales (sin acceso al sistema; solo para datos de demostración)
+insert into public.empleado (nombre, rol, turno, usuario) values
+  ('Ana López',  'mesero', 'matutino', 'alopez'),
+  ('Sofía Ruiz', 'mesero', 'matutino', 'sruiz');
+
 -- Mesas
 insert into public.mesa (numero_mesa, capacidad) values
-  (1, 2), (2, 2), (3, 4), (4, 4), (5, 4), (6, 6), (7, 6), (8, 8);
+  (1, 2), (2, 2), (3, 4), (4, 4), (5, 4), (6, 6), (7, 6), (8, 8),
+  (9, 4), (10, 4), (11, 2), (12, 6);
 
 -- Menú
 insert into public.platillo (nombre, precio, categoria) values
@@ -67,3 +73,43 @@ insert into public.platillo (nombre, precio, categoria) values
   ('Agua de horchata',        35.00, 'Bebidas'),
   ('Refresco',                30.00, 'Bebidas'),
   ('Café americano',          35.00, 'Bebidas');
+
+-- Pedidos de demostración (para ver la Comandería con datos). Se crean "como sistema",
+-- por eso no pasan por las reglas de la API. Las horas son relativas al momento del reset.
+do $$
+declare
+  v_juan bigint := (select id_empleado from public.empleado where usuario = 'mesero');
+  v_ana  bigint := (select id_empleado from public.empleado where usuario = 'alopez');
+  v_sofia bigint := (select id_empleado from public.empleado where usuario = 'sruiz');
+  v_folio bigint;
+begin
+  -- (tipo, mesa, empleado, estado, minutos desde ingreso, [platillo, cantidad]...)
+  insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
+  values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 12), v_juan, 'listo', now() - interval '24 minutes')
+  returning folio into v_folio;
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 6, 1), (v_folio, 10, 2), (v_folio, 3, 2);
+
+  insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
+  values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 3), v_sofia, 'entregado', now() - interval '32 minutes')
+  returning folio into v_folio;
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 5, 2), (v_folio, 7, 2), (v_folio, 11, 2);
+
+  insert into public.pedido (tipo_pedido, id_empleado, estado, hora_ingreso)
+  values ('para_llevar', v_juan, 'en_preparacion', now() - interval '27 minutes')
+  returning folio into v_folio;
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 4, 2), (v_folio, 12, 1);
+
+  insert into public.pedido (tipo_pedido, id_empleado, estado, hora_ingreso)
+  values ('para_llevar', v_ana, 'en_preparacion', now() - interval '18 minutes')
+  returning folio into v_folio;
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 5, 1), (v_folio, 1, 1), (v_folio, 8, 2);
+
+  insert into public.pedido (tipo_pedido, id_mesa, id_empleado, estado, hora_ingreso)
+  values ('en_mesa', (select id_mesa from public.mesa where numero_mesa = 1), v_juan, 'pendiente', now() - interval '3 minutes')
+  returning folio into v_folio;
+  insert into public.detalle_pedido (folio, id_platillo, cantidad) values (v_folio, 4, 1), (v_folio, 1, 1), (v_folio, 10, 2);
+end $$;
+
+-- Las notificaciones y la bitácora de arriba son ruido del seed: se limpian.
+delete from public.notificacion_cocina;
+delete from public.bitacora_auditoria;
