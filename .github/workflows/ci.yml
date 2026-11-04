@@ -1,0 +1,63 @@
+name: CI
+
+# Se ejecuta en cada Pull Request hacia main y en cada push a main.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Si se sube otro commit a la misma rama, cancela la ejecución anterior.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  flutter:
+    name: Analizar y probar (Flutter)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.47.9
+          cache: true
+
+      - name: Instalar dependencias
+        run: flutter pub get
+
+      # Los avisos informativos (p. ej. el de `anonKey` deprecado) no hacen fallar el análisis.
+      - name: Analizar
+        run: flutter analyze --no-fatal-infos
+
+      - name: Pruebas
+        run: flutter test
+
+  base-de-datos:
+    name: Migraciones y seed (Supabase local)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar la CLI de Supabase
+        run: npm ci
+
+      # `start` aplica todas las migraciones y el seed.sql; si alguna falla, el paso falla.
+      - name: Levantar Supabase local con todas las migraciones
+        run: npx supabase start
+
+      - name: Estado
+        run: npx supabase status
+
+      - name: Detener
+        if: always()
+        run: npx supabase stop --no-backup

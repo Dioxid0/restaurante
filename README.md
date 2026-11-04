@@ -168,14 +168,58 @@ npx supabase stop
 
 ---
 
-## Flujo de trabajo en equipo
+## Colaboración con Git
 
-1. Antes de empezar: `git checkout main` y `git pull`.
-2. Crea una rama por tarea: `git checkout -b feature/nombre-corto`.
-3. Haz commits pequeños con mensajes claros (panel Control de código fuente de VS Code).
-4. Sube la rama: `git push -u origin feature/nombre-corto` y abre un **Pull Request** en GitHub.
-5. Otro compañero lo revisa y se hace merge a `main`. **No hagas push directo a `main`.**
-6. Si cambias el esquema de la base de datos, usa **migraciones** (ver abajo).
+`main` siempre debe funcionar: **nadie sube directo a `main`**. Todo entra por un Pull Request (PR) revisado por otra persona.
+
+### Ramas
+- Cada integrante tiene **su rama personal**, con su nombre: `David`, `Cazales`, ...
+- Para tareas grandes o paralelas se puede abrir una rama aparte desde la propia: `feature/menu-gerente`, `fix/total-comanda`, `docs/...`.
+- Nunca se trabaja en la rama de otra persona sin avisarle.
+
+### Trabajo del día a día
+1. **Cambiarte a tu rama** y traer lo último de `main`:
+   ```powershell
+   git checkout David
+   git pull origin main
+   ```
+   (Cambia `David` por tu rama.) Si trae migraciones nuevas, ejecuta `npx supabase db reset`.
+2. **Trabaja y haz commits pequeños** con mensajes claros en español (panel Control de código fuente de VS Code):
+   "Agrega filtro por categoría en el menú", no "cambios".
+3. **Sube tu rama** con frecuencia:
+   ```powershell
+   git push origin David
+   ```
+4. **Antes de abrir el PR:** vuelve a traer `main`, resuelve conflictos y verifica:
+   ```powershell
+   git pull origin main
+   flutter analyze
+   flutter test
+   ```
+5. **Abre el Pull Request** en GitHub (`David` → `main`) y llena la plantilla. Avisa a tu compañero para que lo revise.
+6. **Merge:** cuando alguien lo apruebe y el CI esté en verde, se hace con el botón **"Create a merge commit"** (no "Squash"; con ramas personales de larga vida el squash provoca conflictos repetidos).
+7. **Después del merge**, vuelve a sincronizar tu rama: `git checkout David` y `git pull origin main`.
+
+### Reglas importantes
+- **Migraciones de base de datos:** nunca se edita una migración que ya está en `main`; se crea una nueva. Si dos personas crean migraciones a la vez no chocan (cada archivo lleva su fecha y hora).
+- **Código generado** (`*.g.dart`, `*.freezed.dart`): si hay conflicto no se resuelve a mano; acepta cualquier versión y regenera con `dart run build_runner build`.
+- **`pubspec.lock`:** si hay conflicto, acepta una versión y ejecuta `flutter pub get`.
+- **Zonas compartidas** (más propensas a conflictos): `lib/core/router/app_router.dart`, `test/helpers/fakes.dart`, `CLAUDE.md`. Avisa al equipo antes de cambiarlas.
+- **Repartir el trabajo por pantallas o áreas** para no tocar los mismos archivos.
+- Nunca uses `git push --force` en `main` ni en la rama de otra persona.
+
+### Integración continua (CI)
+Cada PR y cada cambio en `main` ejecuta automáticamente (GitHub Actions, `.github/workflows/ci.yml`):
+- **Analizar y probar (Flutter):** `flutter analyze` y `flutter test`.
+- **Migraciones y seed (Supabase local):** levanta Supabase y aplica todas las migraciones y el `seed.sql`.
+
+Si aparece una ❌ en tu PR, abre el detalle, corrige y vuelve a subir; el CI se repite solo. **No se hace merge con el CI en rojo.**
+
+### Proteger `main` (lo hace quien administra el repositorio)
+En GitHub: **Settings → Branches → Add branch ruleset / protection rule** para `main`, con: exigir Pull Request antes de entrar, 1 aprobación y que pase el CI. (En repositorios privados con cuenta gratuita esta opción puede no estar disponible; entonces se cumple por acuerdo del equipo.)
+
+### Base de datos
+Si cambias el esquema, usa **migraciones** (ver más abajo).
 
 ### Base de datos (Supabase)
 - Todo cambio de esquema va en una migración, nunca solo desde Studio:
