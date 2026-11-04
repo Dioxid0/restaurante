@@ -64,7 +64,7 @@
 - Los widgets no llaman a Supabase directamente: usan repositorios expuestos por providers.
 
 ## Contexto del entorno y del equipo
-- Proyecto escolar en equipo; repo: https://github.com/Dioxid0/restaurante (rama `main`, trabajo por ramas + Pull Request; no push directo a `main`).
+- Proyecto escolar en equipo; repo: https://github.com/Dioxid0/restaurante (rama `main`; **nadie sube directo a `main`**: cada integrante trabaja en su rama personal —`David`, `Cazales`— y entra por Pull Request con CI en verde; merge con "Create a merge commit"). Flujo completo en la sección "Colaboración con Git" del `README.md`. Si el usuario pide subir cambios, hacerlo a su rama, no a `main`.
 - Sistema operativo del equipo: Windows. Usar siempre comandos de **PowerShell**.
 - Flutter está instalado clonando el SDK en `C:\src\flutter` (winget no tiene paquete oficial). Puede no estar en el PATH de terminales ya abiertas: reabrir la terminal.
 - Requiere Modo de desarrollador de Windows activado (symlinks de plugins).
