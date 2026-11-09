@@ -40,7 +40,7 @@ class _InicioCliente extends StatelessWidget {
             Text('Hola, $nombre', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             const Text(
-              'Pide en línea para llevar. Las reservaciones llegarán pronto.',
+              'Pide en línea para llevar y administra tus reservaciones.',
               textAlign: TextAlign.center,
               style: TextStyle(color: AppColors.textMuted, fontSize: 13.5),
             ),
