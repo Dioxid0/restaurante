@@ -10,7 +10,10 @@ import '../../domain/errors.dart';
 import '../auth/auth_providers.dart';
 import '../pedidos/pedidos_providers.dart';
 import '../pedidos/widgets/boton_confirmable.dart';
+import '../pedidos/widgets/pedido_chips.dart';
+import 'formato_reservacion.dart';
 import 'reservaciones_providers.dart';
+import 'widgets/reservacion_form_dialog.dart';
 
 enum _Filtro {
   proximas('Próximas'),
@@ -21,11 +24,9 @@ enum _Filtro {
   final String etiqueta;
 }
 
-const _dias = ['lun', 'mar', 'mié', 'jue', 'vie', 'sáb', 'dom'];
-const _meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-
 /// Reservaciones (CU-12): el cliente ve las suyas; el mesero y el gerente ven todas.
-/// Aquí también se confirman ("¿Confirmas tu reservación?") y se cancelan (CU-14).
+/// Desde aquí se crean (CU-10), modifican (CU-13), confirman ("¿Confirmas tu reservación?")
+/// y cancelan (CU-14).
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
 class ReservacionesScreen extends ConsumerStatefulWidget {
   const ReservacionesScreen({super.key});
@@ -47,6 +48,20 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
     }
   }
 
+  /// Abre el formulario (nueva si [reservacion] es null) y avisa si se guardó.
+  Future<void> _abrirFormulario({Reservacion? reservacion, required bool esCliente}) async {
+    final guardada = await showDialog<bool>(
+      context: context,
+      builder: (_) => ReservacionFormDialog(esCliente: esCliente, reservacion: reservacion),
+    );
+    if (guardada == true && mounted) {
+      mostrarToast(
+        context,
+        reservacion == null ? 'Reservación creada' : 'Reservación modificada',
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final reservaciones = ref.watch(reservacionesListaProvider);
@@ -63,26 +78,49 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'RESERVACIONES',
-                style: TextStyle(
-                  color: AppColors.amber,
-                  fontSize: 10.5,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                esCliente ? 'Mis reservaciones' : 'Reservaciones',
-                style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                esCliente
-                    ? 'Consulta, confirma o cancela tus reservaciones.'
-                    : 'Reservaciones de todos los clientes. La mesa se asigna sola.',
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'RESERVACIONES',
+                          style: TextStyle(
+                            color: AppColors.amber,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          esCliente ? 'Mis reservaciones' : 'Reservaciones',
+                          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          esCliente
+                              ? 'Reserva una mesa y administra tus reservaciones.'
+                              : 'Reservaciones de todos los clientes. La mesa se asigna sola.',
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                        ),
+                      ],
+                    ),
+                  ),
+                  FilledButton.icon(
+                    onPressed: () => _abrirFormulario(esCliente: esCliente),
+                    icon: const Icon(Icons.add, size: 20),
+                    label: const Text('Nueva reservación'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.amber,
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 18),
               Wrap(
@@ -94,6 +132,10 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
                       selected: _filtro == f,
                       onSelected: (_) => setState(() => _filtro = f),
                       selectedColor: AppColors.amberSoft,
+                      backgroundColor: Colors.white,
+                      side: BorderSide(
+                        color: _filtro == f ? AppColors.amber.withValues(alpha: 0.5) : AppColors.border,
+                      ),
                       showCheckmark: false,
                       labelStyle: TextStyle(
                         fontSize: 12.5,
@@ -137,6 +179,7 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
                             reservacion: r,
                             ahora: ahora,
                             esCliente: esCliente,
+                            alModificar: () => _abrirFormulario(reservacion: r, esCliente: esCliente),
                             alConfirmar: () => _ejecutar(
                               () => notifier.confirmar(r.idReservacion),
                               'Reservación confirmada',
@@ -204,6 +247,7 @@ class _TarjetaReservacion extends StatelessWidget {
     required this.reservacion,
     required this.ahora,
     required this.esCliente,
+    required this.alModificar,
     required this.alConfirmar,
     required this.alCancelar,
   });
@@ -211,6 +255,7 @@ class _TarjetaReservacion extends StatelessWidget {
   final Reservacion reservacion;
   final DateTime ahora;
   final bool esCliente;
+  final VoidCallback alModificar;
   final VoidCallback alConfirmar;
   final VoidCallback alCancelar;
 
@@ -292,8 +337,15 @@ class _TarjetaReservacion extends StatelessWidget {
                         borde: const Color(0xFFBBF7D0),
                         alConfirmar: alConfirmar,
                       ),
-                    if (puedeConfirmar && puedeCancelar) const SizedBox(width: 8),
-                    if (puedeCancelar)
+                    if (puedeConfirmar) const SizedBox(width: 8),
+                    // Modificar y cancelar siguen las mismas reglas (RN-07 para el cliente).
+                    if (puedeCancelar) ...[
+                      BotonIcono(
+                        icono: Icons.edit_outlined,
+                        tooltip: 'Modificar',
+                        alPresionar: alModificar,
+                      ),
+                      const SizedBox(width: 8),
                       BotonConfirmable(
                         icono: Icons.close,
                         tooltip: 'Cancelar',
@@ -305,6 +357,7 @@ class _TarjetaReservacion extends StatelessWidget {
                         borde: const Color(0xFFFECACA),
                         alConfirmar: alCancelar,
                       ),
+                    ],
                   ],
                 ),
               ],
@@ -344,12 +397,12 @@ class _BloqueFecha extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            _dias[fecha.weekday - 1].toUpperCase(),
+            diasCortos[fecha.weekday - 1].toUpperCase(),
             style: const TextStyle(color: AppColors.amber, fontSize: 10.5, fontWeight: FontWeight.w800),
           ),
           Text('${fecha.day}', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
           Text(
-            _meses[fecha.month - 1].toUpperCase(),
+            mesesCortos[fecha.month - 1].toUpperCase(),
             style: const TextStyle(color: AppColors.textMuted, fontSize: 10.5, fontWeight: FontWeight.w700),
           ),
         ],
