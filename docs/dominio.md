@@ -79,6 +79,14 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Dentro de esas 5 h el cliente ya no puede cancelar ni modificar (RN-07), solo confirmar.
 - Si el cliente modifica fecha/hora/comensales, vuelve a `pendiente` y se reasigna mesa.
 - No hay cancelación automática por falta de confirmación (requeriría tareas programadas; fuera de alcance).
+- **Quién hace qué:** el cliente reserva, consulta, modifica y cancela las suyas (CU-10/12/13/14) y solo ve su
+ reservación, sin mesa. El mesero y el gerente ven todas (con mesa y cliente), pueden crear a nombre de un
+ cliente (existente o nuevo, sin cuenta), modificar y cancelar sin el límite de 5 h. El chef no accede.
+- **Pantalla** (`features/reservaciones`, pestaña "Reservaciones"): lista con filtro Próximas / Historial / Todas,
+tiempo real, confirmar y cancelar con burbuja de confirmación, y un formulario único (fecha, hora, comensales)
+para crear y modificar. La mesa nunca se elige: la asigna la base. Diseño provisional sin Figma.
+- El repositorio (`ReservacionRepository`) escribe directo en `reservacion` y `cliente`; las reglas (mesa
+disponible, RN-07, fecha futura) las valida el trigger `reservacion_validar` y el mensaje llega en español.
 
 ## Contrato con la app (Flutter)
 - Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`
