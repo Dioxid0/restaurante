@@ -9,6 +9,8 @@ import '../domain/repositories/pedido_repository.dart';
 import 'supabase_auth_repository.dart';
 import 'supabase_empleado_repository.dart';
 import 'supabase_pedido_repository.dart';
+import '../domain/repositories/reservacion_repository.dart';
+import 'supabase_reservacion_repository.dart';
 
 part 'repository_providers.g.dart';
 
@@ -32,3 +34,6 @@ MenuRepository menuRepository(Ref ref) => SupabaseMenuRepository(Supabase.instan
 
 @Riverpod(keepAlive: true)
 MesaRepository mesaRepository(Ref ref) => SupabaseMesaRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+ReservacionRepository reservacionRepository(Ref ref) => SupabaseReservacionRepository(Supabase.instance.client);
