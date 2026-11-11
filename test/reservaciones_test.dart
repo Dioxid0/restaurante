@@ -123,15 +123,13 @@ void main() {
       expect(c.read(reservacionesListaProvider).value, hasLength(1));
     });
 
-    test('crear (CU-10) manda fecha, comensales y cliente al repositorio', () async {
+    test('crear (CU-10) manda fecha y comensales al repositorio', () async {
       final (c, repo) = await preparar();
       final inicio = DateTime.now().add(const Duration(days: 2));
-      final id = await c
-          .read(reservacionesListaProvider.notifier)
-          .crear(inicio: inicio, comensales: 4, idCliente: 7);
+      final id =
+          await c.read(reservacionesListaProvider.notifier).crear(inicio: inicio, comensales: 4);
       expect(id, 501);
       expect(repo.creadas.single.comensales, 4);
-      expect(repo.creadas.single.idCliente, 7);
       expect(repo.creadas.single.inicio, inicio);
     });
 
@@ -251,15 +249,50 @@ void main() {
       expect(find.byTooltip('Cancelar'), findsNothing);
     });
 
-    testWidgets('mesero: puede modificar, pero no cancelar ni confirmar', (tester) async {
+    testWidgets('mesero: solo observa (sin modificar, cancelar ni confirmar) y no puede reservar',
+        (tester) async {
       await _abrir(
         tester,
         rol: RolUsuario.mesero,
-        lista: [reservacionDePrueba(cliente: 'Ana López')],
+        lista: [
+          reservacionDePrueba(cliente: 'Ana López'),
+          reservacionDePrueba(id: 2, estado: EstadoReservacion.confirmada, cliente: 'Beto'),
+        ],
       );
-      expect(find.byTooltip('Modificar'), findsOneWidget);
+      expect(find.textContaining('Ana López'), findsOneWidget);
+      expect(find.byTooltip('Modificar'), findsNothing);
       expect(find.byTooltip('Cancelar'), findsNothing);
       expect(find.byTooltip('Confirmar'), findsNothing);
+      expect(find.text('Nueva reservación'), findsNothing);
+    });
+
+    testWidgets('gerente: no puede crear reservaciones (solo el cliente)', (tester) async {
+      await _abrir(tester, rol: RolUsuario.gerente, lista: [reservacionDePrueba(cliente: 'Ana López')]);
+      expect(find.text('Nueva reservación'), findsNothing);
+    });
+
+    testWidgets('cliente: sí ve el botón "Nueva reservación"', (tester) async {
+      await _abrir(tester, rol: RolUsuario.cliente, lista: []);
+      expect(find.text('Nueva reservación'), findsOneWidget);
+    });
+
+    testWidgets('gerente: abre el formulario de modificar con el nombre del cliente y guarda',
+        (tester) async {
+      final repo = await _abrir(
+        tester,
+        rol: RolUsuario.gerente,
+        lista: [reservacionDePrueba(cliente: 'Ana López')],
+      );
+      await tester.tap(find.byTooltip('Modificar'));
+      await tester.pumpAndSettle();
+      expect(find.text('Modificar reservación'), findsOneWidget);
+      expect(find.text('Cliente: Ana López'), findsOneWidget);
+      await tester.tap(find.byTooltip('Más'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Guardar cambios'));
+      await tester.pumpAndSettle();
+      expect(repo.modificadas.single.comensales, 3);
+      await _dejarPasarAvisos(tester);
     });
 
     testWidgets('gerente: puede modificar y cancelar (incluso con menos de 5 h), pero no confirmar',

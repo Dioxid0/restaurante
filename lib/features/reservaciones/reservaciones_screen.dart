@@ -25,12 +25,12 @@ enum _Filtro {
 }
 
 /// Reservaciones (CU-12): el cliente ve las suyas; el mesero y el gerente ven todas.
-/// Desde aquí se crean (CU-10), modifican (CU-13) y cancelan (CU-14).
+/// Desde aquí el cliente crea (CU-10), modifica (CU-13) y cancela (CU-14).
 ///
 /// Quién puede qué (la base de datos lo valida de verdad):
-/// - Cliente: crea, modifica, cancela y **confirma** las suyas, con 5 horas de anticipación.
-/// - Mesero: crea a nombre de un cliente y modifica. No cancela ni confirma.
-/// - Gerente: crea, modifica y cancela. No confirma por el cliente.
+/// - Cliente: es el único que crea y **confirma**; modifica y cancela las suyas con 5 horas de anticipación.
+/// - Mesero: solo consulta (no crea, modifica, cancela ni confirma).
+/// - Gerente: modifica y cancela las de los clientes. No crea ni confirma por el cliente.
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
 class ReservacionesScreen extends ConsumerStatefulWidget {
   const ReservacionesScreen({super.key});
@@ -60,8 +60,7 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
     );
     if (guardada != true || !mounted) return;
     final mensaje = switch ((reservacion == null, esCliente)) {
-      (true, true) => 'Reservación creada. Confírmala antes de que falten 5 horas.',
-      (true, false) => 'Reservación registrada',
+      (true, _) => 'Reservación creada. Confírmala antes de que falten 5 horas.',
       (false, true) => 'Reservación modificada. Vuelve a confirmarla.',
       (false, false) => 'Reservación modificada',
     };
@@ -110,23 +109,27 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
                         Text(
                           esCliente
                               ? 'Reserva con 5 horas de anticipación o más y confírmala antes de que se cierre ese plazo.'
-                              : 'Reservaciones de todos los clientes. La mesa se asigna sola.',
+                              : esGerente
+                                  ? 'Reservaciones de todos los clientes. Puedes modificarlas o cancelarlas.'
+                                  : 'Reservaciones de todos los clientes (solo consulta).',
                           style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                         ),
                       ],
                     ),
                   ),
-                  FilledButton.icon(
-                    onPressed: () => _abrirFormulario(esCliente: esCliente),
-                    icon: const Icon(Icons.add, size: 20),
-                    label: const Text('Nueva reservación'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.amber,
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                  // Solo el cliente reserva.
+                  if (esCliente)
+                    FilledButton.icon(
+                      onPressed: () => _abrirFormulario(esCliente: true),
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Nueva reservación'),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.amber,
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+                        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                      ),
                     ),
-                  ),
                 ],
               ),
               const SizedBox(height: 18),
@@ -275,12 +278,12 @@ class _TarjetaReservacion extends StatelessWidget {
     final futura = r.inicio.isAfter(ahora);
     final sinConfirmar = r.sinConfirmar(ahora);
 
-    // Quién puede hacer qué. El cliente tiene el límite de 5 horas (RN-07); el personal
-    // no, pero solo el cliente confirma y solo el gerente cancela por el restaurante.
+    // Quién puede hacer qué. El cliente tiene el límite de 5 horas (RN-07); el gerente
+    // modifica y cancela sin ese límite; el mesero solo mira. Solo el cliente confirma.
     // La base de datos es la que decide de verdad; esto solo evita botones inútiles.
     final puedeConfirmar = esCliente && r.puedeConfirmar(ahora);
-    final puedeModificar = esCliente ? r.clientePuedeCambiar(ahora) : r.estado.esActiva;
-    final puedeCancelar = esCliente ? r.clientePuedeCambiar(ahora) : (esGerente && r.estado.esActiva);
+    final puedeModificar = esCliente ? r.clientePuedeCambiar(ahora) : (esGerente && r.estado.esActiva);
+    final puedeCancelar = puedeModificar;
 
     // Mensaje destacado de arriba (solo cuando hay algo que el cliente debe saber o hacer).
     final (String, Color, Color)? aviso = _aviso(r, futura, sinConfirmar, puedeConfirmar);
@@ -399,7 +402,7 @@ class _TarjetaReservacion extends StatelessWidget {
     if (sinConfirmar && futura) {
       return (
         esCliente
-            ? 'No se confirmó a tiempo y tu mesa se liberó. Si aún la necesitas, llama al restaurante.'
+            ? 'No se confirmó a tiempo y tu mesa se liberó. Si aún la necesitas, haz una nueva reservación.'
             : 'No se confirmó a tiempo: la mesa ya está libre.',
         rojo.$1,
         rojo.$2,

@@ -45,7 +45,7 @@ class _AvisosReservacionesState extends ConsumerState<AvisosReservaciones> {
     final hora = formatoHora(r.inicio);
     if (r.estado == EstadoReservacion.pendiente) {
       return 'No confirmaste a tiempo tu reservación de las $hora: se liberó la mesa. '
-          'Si aún la necesitas, llama al restaurante.';
+          'Si aún la necesitas, haz una nueva reservación.';
     }
     return 'Faltan menos de 5 horas para tu reservación de las $hora. '
         'Ya no se puede cancelar ni modificar. ¡Te esperamos!';

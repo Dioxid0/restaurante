@@ -25,7 +25,7 @@ enum Destino {
   bool permite(RolUsuario rol) => roles.contains(rol);
 }
 
-/// Pestañas visibles para un rol (mesero: solo Inicio; chef: + Cocina; gerente: todo).
+/// Pestañas visibles para un rol (mesero: Inicio + Reservaciones; chef: Inicio + Cocina; gerente: todo).
 /// OJO: esto es solo experiencia de usuario. La seguridad real está en RLS y
 /// en las reglas de la base de datos.
 List<Destino> destinosPara(RolUsuario rol) =>

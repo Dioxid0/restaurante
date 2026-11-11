@@ -11,33 +11,25 @@ abstract interface class ReservacionRepository {
   /// Emite un evento cada vez que cambia alguna reservación (tiempo real).
   Stream<void> cambios();
 
-  /// CU-10: crea una reservación `pendiente` y la base asigna la mesa.
-  /// Si lo hace un cliente, se ignora [idCliente] (siempre es el suyo).
-  /// Si lo hace el personal, [idCliente] es obligatorio.
+  /// CU-10: solo el cliente reserva. Queda `pendiente`, la base asigna la mesa
+  /// y la reservación siempre es del cliente que la crea.
   /// Devuelve el id de la reservación.
-  Future<int> crear({
-    required DateTime inicio,
-    required int comensales,
-    int? idCliente,
-  });
+  Future<int> crear({required DateTime inicio, required int comensales});
 
-  /// CU-13: cambia fecha, hora o comensales. La base vuelve a asignar mesa y,
-  /// si lo hace el cliente, la reservación regresa a `pendiente`.
+  /// CU-13: cambia fecha, hora o comensales (el cliente con 5 horas de anticipación;
+  /// el gerente sin ese límite). La base vuelve a asignar mesa y, si lo hace el
+  /// cliente, la reservación regresa a `pendiente`.
   Future<void> modificar({
     required int idReservacion,
     required DateTime inicio,
     required int comensales,
   });
 
-  /// CU-14: cancela la reservación (el cliente solo con 5 horas de anticipación).
+  /// CU-14: cancela la reservación (el cliente solo con 5 horas de anticipación;
+  /// el gerente en cualquier momento). El mesero no puede.
   Future<void> cancelar(int idReservacion);
 
-  /// Pasa una reservación `pendiente` a `confirmada` ("¿Confirmas tu reservación?").
+  /// Solo el cliente: pasa una reservación `pendiente` a `confirmada`
+  /// ("¿Confirmas tu reservación?"), con más de 5 horas de anticipación.
   Future<void> confirmar(int idReservacion);
-
-  /// Solo para el personal: clientes que se pueden elegir al reservar.
-  Future<List<ClienteReserva>> clientes();
-
-  /// Solo para el personal: da de alta un cliente sin cuenta (por ejemplo, el que llama por teléfono).
-  Future<ClienteReserva> crearCliente({required String nombre, String? telefono});
 }

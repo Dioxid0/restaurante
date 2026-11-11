@@ -54,11 +54,7 @@ class SupabaseReservacionRepository implements ReservacionRepository {
   }
 
   @override
-  Future<int> crear({
-    required DateTime inicio,
-    required int comensales,
-    int? idCliente,
-  }) async {
+  Future<int> crear({required DateTime inicio, required int comensales}) async {
     try {
       final fila = await _client
           .from('reservacion')
@@ -66,8 +62,7 @@ class SupabaseReservacionRepository implements ReservacionRepository {
             'fecha': _fecha(inicio),
             'hora': _hora(inicio),
             'num_comensales': comensales,
-            // Un cliente no envía su id: el trigger de la base lo pone.
-               'id_cliente': ?idCliente,
+            // No se envía el id del cliente: el trigger de la base lo pone.
           })
           .select('id_reservacion')
           .single();
@@ -84,11 +79,16 @@ class SupabaseReservacionRepository implements ReservacionRepository {
     required int comensales,
   }) async {
     try {
-      await _client.from('reservacion').update({
-        'fecha': _fecha(inicio),
-        'hora': _hora(inicio),
-        'num_comensales': comensales,
-      }).eq('id_reservacion', idReservacion);
+      final filas = await _client
+          .from('reservacion')
+          .update({
+            'fecha': _fecha(inicio),
+            'hora': _hora(inicio),
+            'num_comensales': comensales,
+          })
+          .eq('id_reservacion', idReservacion)
+          .select('id_reservacion');
+      _exigirFila(filas);
     } on PostgrestException catch (e) {
       throw ErrorDeNegocio(e.message);
     }
@@ -102,44 +102,24 @@ class SupabaseReservacionRepository implements ReservacionRepository {
 
   Future<void> _cambiarEstado(int idReservacion, EstadoReservacion nuevo) async {
     try {
-      await _client
+      final filas = await _client
           .from('reservacion')
-          .update({'estado': nuevo.valorBd}).eq('id_reservacion', idReservacion);
-    } on PostgrestException catch (e) {
-      throw ErrorDeNegocio(e.message);
-    }
-  }
-
-  @override
-  Future<List<ClienteReserva>> clientes() async {
-    try {
-      final filas =
-          await _client.from('cliente').select('id_cliente, nombre, telefono').order('nombre');
-      return filas.map(_aCliente).toList();
-    } on PostgrestException catch (e) {
-      throw ErrorDeNegocio(e.message);
-    }
-  }
-
-  @override
-  Future<ClienteReserva> crearCliente({required String nombre, String? telefono}) async {
-    try {
-      final tel = telefono?.trim();
-      final fila = await _client
-          .from('cliente')
-          .insert({
-            'nombre': nombre.trim(),
-            'telefono': (tel == null || tel.isEmpty) ? null : tel,
-          })
-          .select('id_cliente, nombre, telefono')
-          .single();
-      return _aCliente(fila);
+          .update({'estado': nuevo.valorBd})
+          .eq('id_reservacion', idReservacion)
+          .select('id_reservacion');
+      _exigirFila(filas);
     } on PostgrestException catch (e) {
       throw ErrorDeNegocio(e.message);
     }
   }
 
   // --- ayudas -------------------------------------------------------------
+
+  /// Si la política RLS no deja tocar la fila (p. ej. un mesero), la base no da error:
+  /// simplemente no actualiza nada. Aquí se convierte en un mensaje claro.
+  void _exigirFila(List<Map<String, dynamic>> filas) {
+    if (filas.isEmpty) throw const ErrorDeNegocio('No tienes permiso para modificar esta reservación');
+  }
 
   /// '2026-11-12'
   String _fecha(DateTime d) =>
@@ -163,10 +143,4 @@ class SupabaseReservacionRepository implements ReservacionRepository {
       numeroMesa: mesa?['numero_mesa'] as int?,
     );
   }
-
-  ClienteReserva _aCliente(Map<String, dynamic> f) => ClienteReserva(
-        idCliente: f['id_cliente'] as int,
-        nombre: f['nombre'] as String,
-        telefono: f['telefono'] as String?,
-      );
 }

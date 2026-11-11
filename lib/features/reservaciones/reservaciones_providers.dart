@@ -21,17 +21,11 @@ class ReservacionesLista extends _$ReservacionesLista {
   }
 
   /// CU-10: crea la reservación. Si falla lanza [ErrorDeNegocio] con el motivo.
-  /// [idCliente] solo lo usa el personal; el cliente siempre reserva para sí mismo.
-  Future<int> crear({
-    required DateTime inicio,
-    required int comensales,
-    int? idCliente,
-  }) async {
-    final id = await ref.read(reservacionRepositoryProvider).crear(
-          inicio: inicio,
-          comensales: comensales,
-          idCliente: idCliente,
-        );
+  /// Solo el cliente reserva, y siempre para sí mismo.
+  Future<int> crear({required DateTime inicio, required int comensales}) async {
+    final id = await ref
+        .read(reservacionRepositoryProvider)
+        .crear(inicio: inicio, comensales: comensales);
     ref.invalidateSelf();
     return id;
   }
@@ -60,22 +54,5 @@ class ReservacionesLista extends _$ReservacionesLista {
   Future<void> confirmar(int idReservacion) async {
     await ref.read(reservacionRepositoryProvider).confirmar(idReservacion);
     ref.invalidateSelf();
-  }
-}
-
-/// Clientes que el personal puede elegir al reservar (solo lo usa el personal).
-@riverpod
-class ClientesReserva extends _$ClientesReserva {
-  @override
-  Future<List<ClienteReserva>> build() => ref.watch(reservacionRepositoryProvider).clientes();
-
-  /// Da de alta un cliente sin cuenta (por ejemplo, el que llama por teléfono)
-  /// y devuelve el cliente creado para dejarlo seleccionado.
-  Future<ClienteReserva> crear({required String nombre, String? telefono}) async {
-    final nuevo = await ref
-        .read(reservacionRepositoryProvider)
-        .crearCliente(nombre: nombre, telefono: telefono);
-    ref.invalidateSelf();
-    return nuevo;
   }
 }

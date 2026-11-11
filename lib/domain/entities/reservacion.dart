@@ -67,13 +67,3 @@ abstract class Reservacion with _$Reservacion {
   bool dentroDeLasUltimas5h(DateTime ahora) =>
       inicio.isAfter(ahora) && !limiteCliente.isAfter(ahora);
 }
-
-/// Cliente que el personal elige al reservar a nombre de alguien.
-@freezed
-abstract class ClienteReserva with _$ClienteReserva {
-  const factory ClienteReserva({
-    required int idCliente,
-    required String nombre,
-    String? telefono,
-  }) = _ClienteReserva;
-}

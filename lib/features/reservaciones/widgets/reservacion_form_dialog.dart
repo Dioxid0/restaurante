@@ -8,9 +8,8 @@ import '../formato_reservacion.dart';
 import '../reservaciones_providers.dart';
 
 /// Formulario para crear (CU-10) o modificar (CU-13) una reservación.
-/// Si [reservacion] viene null, es una reservación nueva.
-/// El cliente reserva para sí mismo; el personal elige (o da de alta) al cliente.
-/// Devuelve `true` si se guardó.
+/// Si [reservacion] viene null, es una reservación nueva (solo el cliente las crea).
+/// El gerente solo la abre para modificar una existente. Devuelve `true` si se guardó.
 class ReservacionFormDialog extends ConsumerStatefulWidget {
   const ReservacionFormDialog({super.key, required this.esCliente, this.reservacion});
 
@@ -24,15 +23,10 @@ class ReservacionFormDialog extends ConsumerStatefulWidget {
 class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
   static const _maxComensales = 20;
 
-  final _formKey = GlobalKey<FormState>();
-  final _nombreNuevo = TextEditingController();
-  final _telefonoNuevo = TextEditingController();
 
   DateTime? _fecha; // solo día, mes y año
   TimeOfDay? _hora;
   int _comensales = 2;
-  ClienteReserva? _cliente;
-  bool _clienteNuevo = false;
   bool _guardando = false;
   String? _error;
 
@@ -47,13 +41,6 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
       _hora = TimeOfDay.fromDateTime(r.inicio);
       _comensales = r.comensales;
     }
-  }
-
-  @override
-  void dispose() {
-    _nombreNuevo.dispose();
-    _telefonoNuevo.dispose();
-    super.dispose();
   }
 
   String _horaTexto(TimeOfDay h) =>
@@ -100,21 +87,11 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
       setState(() => _error = 'La fecha y hora de la reservación deben ser futuras');
       return;
     }
-    // El cliente reserva (o cambia la fecha) con 5 horas de anticipación o más. Para menos
-    // tiempo llama al restaurante y el personal la registra. La base de datos también lo exige.
+    // El cliente reserva (o cambia la fecha) con 5 horas de anticipación o más.
+    // La base de datos también lo exige.
     if (widget.esCliente && inicio.isBefore(DateTime.now().add(Reservacion.anticipacionCliente))) {
-      setState(() => _error = 'Se necesitan al menos 5 horas de anticipación. '
-          'Para menos tiempo, contacta al restaurante.');
+      setState(() => _error = 'Se necesitan al menos 5 horas de anticipación.');
       return;
-    }
-    final esPersonalNueva = !widget.esCliente && !_editando;
-    if (esPersonalNueva) {
-      if (_clienteNuevo) {
-        if (!_formKey.currentState!.validate()) return;
-      } else if (_cliente == null) {
-        setState(() => _error = 'Elige un cliente');
-        return;
-      }
     }
 
     setState(() => _guardando = true);
@@ -127,26 +104,7 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
           comensales: _comensales,
         );
       } else {
-        int? idCliente;
-        if (esPersonalNueva) {
-          if (_clienteNuevo) {
-            final nuevo = await ref
-                .read(clientesReservaProvider.notifier)
-                .crear(nombre: _nombreNuevo.text, telefono: _telefonoNuevo.text);
-            // Si la reservación falla (p. ej. no hay mesa), al reintentar se reutiliza
-            // este cliente en lugar de crear otro igual.
-            if (mounted) {
-              setState(() {
-                _cliente = nuevo;
-                _clienteNuevo = false;
-              });
-            }
-            idCliente = nuevo.idCliente;
-          } else {
-            idCliente = _cliente!.idCliente;
-          }
-        }
-        await lista.crear(inicio: inicio, comensales: _comensales, idCliente: idCliente);
+        await lista.crear(inicio: inicio, comensales: _comensales);
       }
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -164,7 +122,6 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final mostrarClientes = !widget.esCliente && !_editando;
     return AlertDialog(
       backgroundColor: Colors.white,
       surfaceTintColor: Colors.transparent,
@@ -172,9 +129,7 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
       title: Text(_editando ? 'Modificar reservación' : 'Nueva reservación'),
       content: SizedBox(
         width: 440,
-        child: Form(
-          key: _formKey,
-          child: SingleChildScrollView(
+        child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,17 +138,6 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
                   Text(
                     'Cliente: ${widget.reservacion!.nombreCliente ?? '—'}',
                     style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-                if (mostrarClientes) ...[
-                  _SeccionCliente(
-                    cliente: _cliente,
-                    clienteNuevo: _clienteNuevo,
-                    nombre: _nombreNuevo,
-                    telefono: _telefonoNuevo,
-                    alElegir: (c) => setState(() => _cliente = c),
-                    alAlternar: () => setState(() => _clienteNuevo = !_clienteNuevo),
                   ),
                   const SizedBox(height: 14),
                 ],
@@ -261,8 +205,6 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
                             'falten 5 horas o se liberará la mesa.',
                       if (widget.esCliente && _editando)
                         'Al modificarla volverá a quedar pendiente y tendrás que confirmarla.',
-                      if (!widget.esCliente && !_editando)
-                        'Se registra como confirmada: el cliente ya la acordó contigo.',
                     ].join('\n'),
                     style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
                   ),
@@ -274,7 +216,6 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
               ],
             ),
           ),
-        ),
       ),
       actions: [
         TextButton(
@@ -327,83 +268,6 @@ class _CampoSeleccion extends StatelessWidget {
           style: TextStyle(color: valor == null ? AppColors.textFaint : AppColors.text),
         ),
       ),
-    );
-  }
-}
-
-/// Solo para el personal: elegir un cliente existente o dar de alta uno nuevo.
-class _SeccionCliente extends ConsumerWidget {
-  const _SeccionCliente({
-    required this.cliente,
-    required this.clienteNuevo,
-    required this.nombre,
-    required this.telefono,
-    required this.alElegir,
-    required this.alAlternar,
-  });
-
-  final ClienteReserva? cliente;
-  final bool clienteNuevo;
-  final TextEditingController nombre;
-  final TextEditingController telefono;
-  final ValueChanged<ClienteReserva?> alElegir;
-  final VoidCallback alAlternar;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clientes = ref.watch(clientesReservaProvider);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (clienteNuevo) ...[
-          TextFormField(
-            controller: nombre,
-            autofocus: true,
-            decoration: const InputDecoration(labelText: 'Nombre del cliente'),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Indica el nombre' : null,
-          ),
-          const SizedBox(height: 12),
-          TextFormField(
-            controller: telefono,
-            keyboardType: TextInputType.phone,
-            decoration: const InputDecoration(labelText: 'Teléfono (opcional)'),
-          ),
-        ] else
-          clientes.when(
-            loading: () => const LinearProgressIndicator(),
-            error: (_, _) => const Text(
-              'No se pudieron cargar los clientes',
-              style: TextStyle(color: AppColors.danger, fontSize: 13),
-            ),
-            data: (lista) {
-              // Si acabamos de crear al cliente, puede que la lista aún no lo traiga.
-              final opciones = [...lista];
-              if (cliente != null && !opciones.contains(cliente)) opciones.add(cliente!);
-              return DropdownButtonFormField<ClienteReserva>(
-                key: ValueKey(cliente?.idCliente),
-                initialValue: cliente,
-                isExpanded: true,
-                decoration: const InputDecoration(labelText: 'Cliente'),
-                items: [
-                  for (final c in opciones)
-                    DropdownMenuItem(
-                      value: c,
-                      child: Text(c.telefono == null ? c.nombre : '${c.nombre} · ${c.telefono}'),
-                    ),
-                ],
-                onChanged: alElegir,
-              );
-            },
-          ),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton.icon(
-            onPressed: alAlternar,
-            icon: Icon(clienteNuevo ? Icons.list : Icons.person_add_alt, size: 18),
-            label: Text(clienteNuevo ? 'Elegir un cliente existente' : 'Cliente nuevo (sin cuenta)'),
-          ),
-        ),
-      ],
     );
   }
 }

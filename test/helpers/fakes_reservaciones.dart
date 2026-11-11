@@ -4,14 +4,12 @@ import 'package:restaurant_app/domain/repositories/reservacion_repository.dart';
 
 /// Repositorio falso de reservaciones: guarda en memoria lo que la app le pide.
 class FakeReservacionRepository implements ReservacionRepository {
-  FakeReservacionRepository([List<Reservacion>? reservaciones, List<ClienteReserva>? clientes])
-      : reservaciones = reservaciones ?? [],
-        clientesDisponibles = clientes ?? [];
+  FakeReservacionRepository([List<Reservacion>? reservaciones])
+      : reservaciones = reservaciones ?? [];
 
   List<Reservacion> reservaciones;
-  List<ClienteReserva> clientesDisponibles;
 
-  final creadas = <({DateTime inicio, int comensales, int? idCliente})>[];
+  final creadas = <({DateTime inicio, int comensales})>[];
   final modificadas = <({int id, DateTime inicio, int comensales})>[];
   final canceladas = <int>[];
   final confirmadas = <int>[];
@@ -29,13 +27,9 @@ class FakeReservacionRepository implements ReservacionRepository {
   Stream<void> cambios() => const Stream.empty();
 
   @override
-  Future<int> crear({
-    required DateTime inicio,
-    required int comensales,
-    int? idCliente,
-  }) async {
+  Future<int> crear({required DateTime inicio, required int comensales}) async {
     if (errorAlGuardar != null) throw ErrorDeNegocio(errorAlGuardar!);
-    creadas.add((inicio: inicio, comensales: comensales, idCliente: idCliente));
+    creadas.add((inicio: inicio, comensales: comensales));
     return 500 + creadas.length;
   }
 
@@ -67,20 +61,6 @@ class FakeReservacionRepository implements ReservacionRepository {
     reservaciones = [
       for (final r in reservaciones) r.idReservacion == id ? r.copyWith(estado: estado) : r,
     ];
-  }
-
-  @override
-  Future<List<ClienteReserva>> clientes() async => List.of(clientesDisponibles);
-
-  @override
-  Future<ClienteReserva> crearCliente({required String nombre, String? telefono}) async {
-    final nuevo = ClienteReserva(
-      idCliente: 900 + clientesDisponibles.length,
-      nombre: nombre.trim(),
-      telefono: (telefono == null || telefono.trim().isEmpty) ? null : telefono.trim(),
-    );
-    clientesDisponibles.add(nuevo);
-    return nuevo;
   }
 }
 
