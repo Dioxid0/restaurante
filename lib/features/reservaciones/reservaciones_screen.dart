@@ -25,8 +25,12 @@ enum _Filtro {
 }
 
 /// Reservaciones (CU-12): el cliente ve las suyas; el mesero y el gerente ven todas.
-/// Desde aquí se crean (CU-10), modifican (CU-13), confirman ("¿Confirmas tu reservación?")
-/// y cancelan (CU-14).
+/// Desde aquí se crean (CU-10), modifican (CU-13) y cancelan (CU-14).
+///
+/// Quién puede qué (la base de datos lo valida de verdad):
+/// - Cliente: crea, modifica, cancela y **confirma** las suyas, con 5 horas de anticipación.
+/// - Mesero: crea a nombre de un cliente y modifica. No cancela ni confirma.
+/// - Gerente: crea, modifica y cancela. No confirma por el cliente.
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
 class ReservacionesScreen extends ConsumerStatefulWidget {
   const ReservacionesScreen({super.key});
@@ -54,12 +58,14 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
       context: context,
       builder: (_) => ReservacionFormDialog(esCliente: esCliente, reservacion: reservacion),
     );
-    if (guardada == true && mounted) {
-      mostrarToast(
-        context,
-        reservacion == null ? 'Reservación creada' : 'Reservación modificada',
-      );
-    }
+    if (guardada != true || !mounted) return;
+    final mensaje = switch ((reservacion == null, esCliente)) {
+      (true, true) => 'Reservación creada. Confírmala antes de que falten 5 horas.',
+      (true, false) => 'Reservación registrada',
+      (false, true) => 'Reservación modificada. Vuelve a confirmarla.',
+      (false, false) => 'Reservación modificada',
+    };
+    mostrarToast(context, mensaje);
   }
 
   @override
@@ -67,7 +73,8 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
     final reservaciones = ref.watch(reservacionesListaProvider);
     final perfil = ref.watch(perfilActualProvider).value;
     final esCliente = perfil?.rol == RolUsuario.cliente;
-    // El reloj avanza solo, así "¿Confirmas?" aparece sin recargar la pantalla.
+    final esGerente = perfil?.rol == RolUsuario.gerente;
+    // El reloj avanza solo, así los avisos de las 5 horas aparecen sin recargar.
     final ahora = ref.watch(relojProvider).value ?? DateTime.now();
 
     return SingleChildScrollView(
@@ -102,7 +109,7 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
                         const SizedBox(height: 4),
                         Text(
                           esCliente
-                              ? 'Reserva una mesa y administra tus reservaciones.'
+                              ? 'Reserva con 5 horas de anticipación o más y confírmala antes de que se cierre ese plazo.'
                               : 'Reservaciones de todos los clientes. La mesa se asigna sola.',
                           style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                         ),
@@ -179,6 +186,7 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
                             reservacion: r,
                             ahora: ahora,
                             esCliente: esCliente,
+                            esGerente: esGerente,
                             alModificar: () => _abrirFormulario(reservacion: r, esCliente: esCliente),
                             alConfirmar: () => _ejecutar(
                               () => notifier.confirmar(r.idReservacion),
@@ -247,6 +255,7 @@ class _TarjetaReservacion extends StatelessWidget {
     required this.reservacion,
     required this.ahora,
     required this.esCliente,
+    required this.esGerente,
     required this.alModificar,
     required this.alConfirmar,
     required this.alCancelar,
@@ -255,6 +264,7 @@ class _TarjetaReservacion extends StatelessWidget {
   final Reservacion reservacion;
   final DateTime ahora;
   final bool esCliente;
+  final bool esGerente;
   final VoidCallback alModificar;
   final VoidCallback alConfirmar;
   final VoidCallback alCancelar;
@@ -263,32 +273,35 @@ class _TarjetaReservacion extends StatelessWidget {
   Widget build(BuildContext context) {
     final r = reservacion;
     final futura = r.inicio.isAfter(ahora);
+    final sinConfirmar = r.sinConfirmar(ahora);
 
-    // Quién puede hacer qué: el cliente tiene el límite de 5 horas (RN-07);
-    // el personal no. Aun así, la base de datos es la que decide de verdad.
-    final puedeCancelar = esCliente ? r.clientePuedeCambiar(ahora) : r.estado.esActiva;
-    final puedeConfirmar = r.estado == EstadoReservacion.pendiente &&
-        (esCliente ? r.requiereConfirmacion(ahora) : futura);
-    final pidePreguntar = esCliente && r.requiereConfirmacion(ahora);
-    final bloqueadaPorTiempo = esCliente && r.estado.esActiva && futura && !r.clientePuedeCambiar(ahora);
+    // Quién puede hacer qué. El cliente tiene el límite de 5 horas (RN-07); el personal
+    // no, pero solo el cliente confirma y solo el gerente cancela por el restaurante.
+    // La base de datos es la que decide de verdad; esto solo evita botones inútiles.
+    final puedeConfirmar = esCliente && r.puedeConfirmar(ahora);
+    final puedeModificar = esCliente ? r.clientePuedeCambiar(ahora) : r.estado.esActiva;
+    final puedeCancelar = esCliente ? r.clientePuedeCambiar(ahora) : (esGerente && r.estado.esActiva);
+
+    // Mensaje destacado de arriba (solo cuando hay algo que el cliente debe saber o hacer).
+    final (String, Color, Color)? aviso = _aviso(r, futura, sinConfirmar, puedeConfirmar);
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: pidePreguntar ? AppColors.amber : AppColors.border),
+        border: Border.all(color: puedeConfirmar ? AppColors.amber : AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          if (pidePreguntar)
+          if (aviso != null)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-              color: AppColors.amberSoft,
-              child: const Text(
-                '¿Confirmas tu reservación? Te esperamos pronto.',
-                style: TextStyle(color: Color(0xFFB45309), fontSize: 12.5, fontWeight: FontWeight.w700),
+              color: aviso.$2,
+              child: Text(
+                aviso.$1,
+                style: TextStyle(color: aviso.$3, fontSize: 12.5, fontWeight: FontWeight.w700),
               ),
             ),
           Padding(
@@ -311,11 +324,13 @@ class _TarjetaReservacion extends StatelessWidget {
                         style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
                       ),
                       const SizedBox(height: 8),
-                      _EstadoReservacionChip(r.estado),
-                      if (bloqueadaPorTiempo) ...[
+                      _EstadoReservacionChip(r.estado, sinConfirmar: sinConfirmar),
+                      if (esCliente && r.estado == EstadoReservacion.confirmada && futura &&
+                          !r.clientePuedeCambiar(ahora)) ...[
                         const SizedBox(height: 6),
                         const Text(
-                          'Faltan menos de 5 horas: para cambiarla, contacta al restaurante.',
+                          'Faltan menos de 5 horas: ya no se puede cancelar ni modificar. '
+                          'Para cambios, contacta al restaurante.',
                           style: TextStyle(color: AppColors.textFaint, fontSize: 11.5),
                         ),
                       ],
@@ -326,7 +341,7 @@ class _TarjetaReservacion extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (puedeConfirmar)
+                    if (puedeConfirmar) ...[
                       BotonConfirmable(
                         icono: Icons.check,
                         tooltip: 'Confirmar',
@@ -337,15 +352,17 @@ class _TarjetaReservacion extends StatelessWidget {
                         borde: const Color(0xFFBBF7D0),
                         alConfirmar: alConfirmar,
                       ),
-                    if (puedeConfirmar) const SizedBox(width: 8),
-                    // Modificar y cancelar siguen las mismas reglas (RN-07 para el cliente).
-                    if (puedeCancelar) ...[
+                      const SizedBox(width: 8),
+                    ],
+                    if (puedeModificar) ...[
                       BotonIcono(
                         icono: Icons.edit_outlined,
                         tooltip: 'Modificar',
                         alPresionar: alModificar,
                       ),
                       const SizedBox(width: 8),
+                    ],
+                    if (puedeCancelar)
                       BotonConfirmable(
                         icono: Icons.close,
                         tooltip: 'Cancelar',
@@ -357,7 +374,6 @@ class _TarjetaReservacion extends StatelessWidget {
                         borde: const Color(0xFFFECACA),
                         alConfirmar: alCancelar,
                       ),
-                    ],
                   ],
                 ),
               ],
@@ -366,6 +382,30 @@ class _TarjetaReservacion extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// Texto, fondo y color de letra del mensaje de arriba de la tarjeta (o null si no hay).
+  (String, Color, Color)? _aviso(Reservacion r, bool futura, bool sinConfirmar, bool puedeConfirmar) {
+    const ambar = (AppColors.amberSoft, Color(0xFFB45309));
+    const rojo = (Color(0xFFFEE2E2), Color(0xFFB91C1C));
+    if (esCliente && puedeConfirmar) {
+      return (
+        '¿Confirmas tu reservación? Confírmala antes de ${cuando(r.limiteCliente, ahora)} '
+            'o se liberará tu mesa.',
+        ambar.$1,
+        ambar.$2,
+      );
+    }
+    if (sinConfirmar && futura) {
+      return (
+        esCliente
+            ? 'No se confirmó a tiempo y tu mesa se liberó. Si aún la necesitas, llama al restaurante.'
+            : 'No se confirmó a tiempo: la mesa ya está libre.',
+        rojo.$1,
+        rojo.$2,
+      );
+    }
+    return null;
   }
 
   /// "4 personas · Mesa M-03 · Ana López" (la mesa y el nombre solo los ve el personal).
@@ -412,8 +452,11 @@ class _BloqueFecha extends StatelessWidget {
 }
 
 class _EstadoReservacionChip extends StatelessWidget {
-  const _EstadoReservacionChip(this.estado);
+  const _EstadoReservacionChip(this.estado, {required this.sinConfirmar});
   final EstadoReservacion estado;
+
+  /// Pendiente que ya no se pudo confirmar: se muestra como "Sin confirmar".
+  final bool sinConfirmar;
 
   static (Color fondo, Color texto) _colores(EstadoReservacion e) => switch (e) {
         EstadoReservacion.pendiente => (const Color(0xFFFEF3C7), const Color(0xFFB45309)),
@@ -424,7 +467,8 @@ class _EstadoReservacionChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (fondo, texto) = _colores(estado);
+    final (fondo, texto) =
+        sinConfirmar ? (const Color(0xFFFEE2E2), const Color(0xFFB91C1C)) : _colores(estado);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(color: fondo, borderRadius: BorderRadius.circular(20)),
@@ -434,7 +478,7 @@ class _EstadoReservacionChip extends StatelessWidget {
           Icon(Icons.circle, size: 7, color: texto),
           const SizedBox(width: 6),
           Text(
-            estado.etiqueta,
+            sinConfirmar ? 'Sin confirmar' : estado.etiqueta,
             style: TextStyle(color: texto, fontSize: 11.5, fontWeight: FontWeight.w700),
           ),
         ],

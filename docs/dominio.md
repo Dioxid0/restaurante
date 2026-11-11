@@ -72,21 +72,12 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
-- La mesa se **asigna automáticamente**: la de menor capacidad que alcance y no se empalme.
-  Se supone una duración de **2 horas** por reservación.
-- Se crea `pendiente`. Cuando faltan ≤ 5 h, la vista `reservaciones_por_confirmar` la lista y la app del
-  cliente muestra "¿Confirmas tu reservación?" → el cliente la pasa a `confirmada`.
-- Dentro de esas 5 h el cliente ya no puede cancelar ni modificar (RN-07), solo confirmar.
-- Si el cliente modifica fecha/hora/comensales, vuelve a `pendiente` y se reasigna mesa.
-- No hay cancelación automática por falta de confirmación (requeriría tareas programadas; fuera de alcance).
-- **Quién hace qué:** el cliente reserva, consulta, modifica y cancela las suyas (CU-10/12/13/14) y solo ve su
- reservación, sin mesa. El mesero y el gerente ven todas (con mesa y cliente), pueden crear a nombre de un
- cliente (existente o nuevo, sin cuenta), modificar y cancelar sin el límite de 5 h. El chef no accede.
-- **Pantalla** (`features/reservaciones`, pestaña "Reservaciones"): lista con filtro Próximas / Historial / Todas,
-tiempo real, confirmar y cancelar con burbuja de confirmación, y un formulario único (fecha, hora, comensales)
-para crear y modificar. La mesa nunca se elige: la asigna la base. Diseño provisional sin Figma.
-- El repositorio (`ReservacionRepository`) escribe directo en `reservacion` y `cliente`; las reglas (mesa
-disponible, RN-07, fecha futura) las valida el trigger `reservacion_validar` y el mensaje llega en español.
+- La mesa se **asigna automáticamente**: la de menor capacidad que alcance y no se empalme. Se supone una duración de **2 horas** por reservación.
+- **Quién puede qué:** el cliente crea (con 5 h o más de anticipación; nace `pendiente`), modifica (vuelve a `pendiente`), cancela y **confirma** las suyas, todo con la ventana de 5 h (RN-07). El mesero crea a nombre de un cliente (nace `confirmada`) y modifica, pero **no cancela**. El gerente crea, modifica y **cancela** sin límite. **Solo el cliente confirma**: ni el mesero ni el gerente pueden hacerlo por él.
+- **Confirmación:** el cliente confirma antes de que se cierre la ventana de 5 h. Si llega a las 5 h sin confirmar queda "sin confirmar" y la mesa se libera sola. No hay tareas programadas: se calcula al consultar. La vista `reservaciones_por_confirmar` lista esas reservaciones para que el personal pueda llamar al cliente.
+- **Aviso al cliente:** cuando a una reservación le faltan 5 h o menos, la app abierta muestra un aviso flotante (`AvisosReservaciones`). No hay correo ni SMS (requiere un servicio externo).
+- Las reglas viven en `reservacion_validar()` (migración `20261110200000_reservaciones_roles_y_confirmacion.sql`).
+- **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear y modificar. Diseño provisional sin Figma.
 
 ## Contrato con la app (Flutter)
 - Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`

@@ -100,6 +100,13 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
       setState(() => _error = 'La fecha y hora de la reservación deben ser futuras');
       return;
     }
+    // El cliente reserva (o cambia la fecha) con 5 horas de anticipación o más. Para menos
+    // tiempo llama al restaurante y el personal la registra. La base de datos también lo exige.
+    if (widget.esCliente && inicio.isBefore(DateTime.now().add(Reservacion.anticipacionCliente))) {
+      setState(() => _error = 'Se necesitan al menos 5 horas de anticipación. '
+          'Para menos tiempo, contacta al restaurante.');
+      return;
+    }
     final esPersonalNueva = !widget.esCliente && !_editando;
     if (esPersonalNueva) {
       if (_clienteNuevo) {
@@ -249,8 +256,13 @@ class _ReservacionFormDialogState extends ConsumerState<ReservacionFormDialog> {
                     [
                       'La mesa se asigna sola según los comensales. '
                           'Cada reservación dura ${Reservacion.duracion.inHours} horas.',
+                      if (widget.esCliente)
+                        'Reserva con al menos 5 horas de anticipación. Confírmala antes de que '
+                            'falten 5 horas o se liberará la mesa.',
                       if (widget.esCliente && _editando)
                         'Al modificarla volverá a quedar pendiente y tendrás que confirmarla.',
+                      if (!widget.esCliente && !_editando)
+                        'Se registra como confirmada: el cliente ya la acordó contigo.',
                     ].join('\n'),
                     style: const TextStyle(color: AppColors.textMuted, fontSize: 12.5),
                   ),

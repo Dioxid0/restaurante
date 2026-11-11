@@ -48,15 +48,24 @@ abstract class Reservacion with _$Reservacion {
   String? get mesaEtiqueta =>
       numeroMesa == null ? null : 'M-${numeroMesa.toString().padLeft(2, '0')}';
 
-  /// El cliente aún puede cancelar o modificar (RN-07). El personal no tiene este límite.
-  bool clientePuedeCambiar(DateTime ahora) =>
-      estado.esActiva && inicio.subtract(anticipacionCliente).isAfter(ahora);
+  /// Hasta cuándo el cliente puede confirmar, cancelar o modificar: 5 horas antes de la reservación.
+  DateTime get limiteCliente => inicio.subtract(anticipacionCliente);
 
-  /// Está dentro de las últimas 5 horas y falta confirmarla: se muestra "¿Confirmas?".
-  bool requiereConfirmacion(DateTime ahora) =>
-      estado == EstadoReservacion.pendiente &&
-      inicio.isAfter(ahora) &&
-      !inicio.isAfter(ahora.add(anticipacionCliente));
+  /// El cliente aún puede cancelar o modificar (RN-07). El personal no tiene este límite.
+  bool clientePuedeCambiar(DateTime ahora) => estado.esActiva && limiteCliente.isAfter(ahora);
+
+  /// El cliente aún puede confirmarla: sigue pendiente y faltan más de 5 horas.
+  bool puedeConfirmar(DateTime ahora) =>
+      estado == EstadoReservacion.pendiente && limiteCliente.isAfter(ahora);
+
+  /// Sigue pendiente y ya entró a las últimas 5 horas: no se confirmó a tiempo
+  /// y la base de datos ya liberó la mesa.
+  bool sinConfirmar(DateTime ahora) =>
+      estado == EstadoReservacion.pendiente && !limiteCliente.isAfter(ahora);
+
+  /// Todavía no empieza, pero ya faltan 5 horas o menos (momento del aviso al cliente).
+  bool dentroDeLasUltimas5h(DateTime ahora) =>
+      inicio.isAfter(ahora) && !limiteCliente.isAfter(ahora);
 }
 
 /// Cliente que el personal elige al reservar a nombre de alguien.

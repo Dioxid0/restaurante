@@ -14,10 +14,14 @@ import 'helpers/fakes_reservaciones.dart';
 Future<void> _dejarPasarAvisos(WidgetTester tester) => tester.pump(const Duration(seconds: 6));
 
 /// Abre la app con la sesión de [rol] y entra a la pestaña Reservaciones.
+/// Si al abrir la app aparece el aviso de las 5 horas, se deja pasar para que no estorbe
+/// (salvo que [conservarAvisos] sea true).
 Future<FakeReservacionRepository> _abrir(
   WidgetTester tester, {
   required RolUsuario rol,
   required List<Reservacion> lista,
+  bool irAReservaciones = true,
+  bool conservarAvisos = false,
 }) async {
   final repo = FakeReservacionRepository(lista);
   await abrirApp(
@@ -25,8 +29,11 @@ Future<FakeReservacionRepository> _abrir(
     auth: FakeAuthRepository(sesion: perfilDe(rol)),
     reservaciones: repo,
   );
-  await tester.tap(find.text('Reservaciones'));
-  await tester.pumpAndSettle();
+  if (!conservarAvisos) await _dejarPasarAvisos(tester);
+  if (irAReservaciones) {
+    await tester.tap(find.text('Reservaciones'));
+    await tester.pumpAndSettle();
+  }
   return repo;
 }
 
@@ -65,14 +72,28 @@ void main() {
       expect(r(lejos, estado: EstadoReservacion.confirmada).clientePuedeCambiar(ahora), isTrue);
     });
 
-    test('"¿Confirmas?" solo si está pendiente y faltan 5 horas o menos', () {
-      expect(r(DateTime(2026, 11, 10, 15, 0)).requiereConfirmacion(ahora), isTrue); // faltan 3 h
-      expect(r(DateTime(2026, 11, 10, 18, 0)).requiereConfirmacion(ahora), isFalse); // faltan 6 h
+    test('el cliente confirma solo con más de 5 horas de anticipación', () {
+      expect(r(DateTime(2026, 11, 10, 18, 0)).puedeConfirmar(ahora), isTrue); // faltan 6 h
+      expect(r(DateTime(2026, 11, 10, 16, 0)).puedeConfirmar(ahora), isFalse); // faltan 4 h
       expect(
-        r(DateTime(2026, 11, 10, 15, 0), estado: EstadoReservacion.confirmada).requiereConfirmacion(ahora),
+        r(DateTime(2026, 11, 10, 18, 0), estado: EstadoReservacion.confirmada).puedeConfirmar(ahora),
         isFalse,
       );
-      expect(r(DateTime(2026, 11, 10, 11, 0)).requiereConfirmacion(ahora), isFalse); // ya pasó
+    });
+
+    test('sin confirmar: pendiente que ya entró a las últimas 5 horas', () {
+      expect(r(DateTime(2026, 11, 10, 16, 0)).sinConfirmar(ahora), isTrue); // faltan 4 h
+      expect(r(DateTime(2026, 11, 10, 18, 0)).sinConfirmar(ahora), isFalse); // faltan 6 h
+      expect(
+        r(DateTime(2026, 11, 10, 16, 0), estado: EstadoReservacion.confirmada).sinConfirmar(ahora),
+        isFalse,
+      );
+    });
+
+    test('dentro de las últimas 5 horas: todavía no empieza y faltan 5 h o menos', () {
+      expect(r(DateTime(2026, 11, 10, 16, 0)).dentroDeLasUltimas5h(ahora), isTrue);
+      expect(r(DateTime(2026, 11, 10, 18, 0)).dentroDeLasUltimas5h(ahora), isFalse);
+      expect(r(DateTime(2026, 11, 10, 11, 0)).dentroDeLasUltimas5h(ahora), isFalse); // ya pasó
     });
 
     test('estados: los de la base de datos y cuáles están activos', () {
@@ -183,36 +204,91 @@ void main() {
       expect(find.text('Cancelada'), findsOneWidget);
     });
 
-    testWidgets('cliente con 3 h de anticipación: pregunta "¿Confirmas?" y no puede cambiarla',
+    testWidgets('cliente con reservación pendiente (48 h): pide confirmarla, puede modificar y cancelar',
+        (tester) async {
+      await _abrir(tester, rol: RolUsuario.cliente, lista: [reservacionDePrueba()]);
+      expect(find.textContaining('¿Confirmas tu reservación?'), findsOneWidget);
+      expect(find.byTooltip('Confirmar'), findsOneWidget);
+      expect(find.byTooltip('Modificar'), findsOneWidget);
+      expect(find.byTooltip('Cancelar'), findsOneWidget);
+    });
+
+    testWidgets('cliente con reservación ya confirmada: no hay botón de confirmar', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.cliente,
+        lista: [reservacionDePrueba(estado: EstadoReservacion.confirmada)],
+      );
+      expect(find.byTooltip('Confirmar'), findsNothing);
+      expect(find.byTooltip('Modificar'), findsOneWidget);
+      expect(find.byTooltip('Cancelar'), findsOneWidget);
+    });
+
+    testWidgets('cliente con pendiente a 3 h: sin confirmar, la mesa se liberó y no hay botones',
         (tester) async {
       await _abrir(
         tester,
         rol: RolUsuario.cliente,
         lista: [reservacionDePrueba(enCuanto: const Duration(hours: 3))],
       );
-      expect(find.text('¿Confirmas tu reservación? Te esperamos pronto.'), findsOneWidget);
-      expect(find.byTooltip('Confirmar'), findsOneWidget);
-      expect(find.byTooltip('Cancelar'), findsNothing);
+      expect(find.text('Sin confirmar'), findsOneWidget);
+      expect(find.textContaining('No se confirmó a tiempo'), findsOneWidget);
+      expect(find.byTooltip('Confirmar'), findsNothing);
       expect(find.byTooltip('Modificar'), findsNothing);
-      expect(find.textContaining('contacta al restaurante'), findsOneWidget);
+      expect(find.byTooltip('Cancelar'), findsNothing);
     });
 
-    testWidgets('mesero: puede cancelar y modificar aunque falten menos de 5 horas', (tester) async {
+    testWidgets('cliente con confirmada a 3 h: ya no puede cancelar ni modificar', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.cliente,
+        lista: [
+          reservacionDePrueba(enCuanto: const Duration(hours: 3), estado: EstadoReservacion.confirmada),
+        ],
+      );
+      expect(find.textContaining('ya no se puede cancelar ni modificar'), findsOneWidget);
+      expect(find.byTooltip('Modificar'), findsNothing);
+      expect(find.byTooltip('Cancelar'), findsNothing);
+    });
+
+    testWidgets('mesero: puede modificar, pero no cancelar ni confirmar', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.mesero,
+        lista: [reservacionDePrueba(cliente: 'Ana López')],
+      );
+      expect(find.byTooltip('Modificar'), findsOneWidget);
+      expect(find.byTooltip('Cancelar'), findsNothing);
+      expect(find.byTooltip('Confirmar'), findsNothing);
+    });
+
+    testWidgets('gerente: puede modificar y cancelar (incluso con menos de 5 h), pero no confirmar',
+        (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.gerente,
+        lista: [
+          reservacionDePrueba(enCuanto: const Duration(hours: 3), estado: EstadoReservacion.confirmada),
+          reservacionDePrueba(id: 2, cliente: 'Beto'),
+        ],
+      );
+      expect(find.byTooltip('Modificar'), findsNWidgets(2));
+      expect(find.byTooltip('Cancelar'), findsNWidgets(2));
+      expect(find.byTooltip('Confirmar'), findsNothing);
+    });
+
+    testWidgets('el personal ve "Sin confirmar" cuando la mesa ya se liberó', (tester) async {
       await _abrir(
         tester,
         rol: RolUsuario.mesero,
         lista: [reservacionDePrueba(enCuanto: const Duration(hours: 3), cliente: 'Ana López')],
       );
-      expect(find.byTooltip('Cancelar'), findsOneWidget);
-      expect(find.byTooltip('Modificar'), findsOneWidget);
+      expect(find.text('Sin confirmar'), findsOneWidget);
+      expect(find.textContaining('la mesa ya está libre'), findsOneWidget);
     });
 
     testWidgets('confirmar pide confirmación y avisa', (tester) async {
-      final repo = await _abrir(
-        tester,
-        rol: RolUsuario.cliente,
-        lista: [reservacionDePrueba(enCuanto: const Duration(hours: 3))],
-      );
+      final repo = await _abrir(tester, rol: RolUsuario.cliente, lista: [reservacionDePrueba()]);
       await tester.tap(find.byTooltip('Confirmar'));
       await tester.pumpAndSettle();
       expect(find.text('¿Confirmar la reservación?'), findsOneWidget);
@@ -240,6 +316,20 @@ void main() {
       await _dejarPasarAvisos(tester);
     });
 
+    testWidgets('el gerente cancela una reservación del cliente', (tester) async {
+      final repo = await _abrir(
+        tester,
+        rol: RolUsuario.gerente,
+        lista: [reservacionDePrueba(cliente: 'Ana López')],
+      );
+      await tester.tap(find.byTooltip('Cancelar'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Sí, cancelar'));
+      await tester.pumpAndSettle();
+      expect(repo.canceladas, [1]);
+      await _dejarPasarAvisos(tester);
+    });
+
     testWidgets('si la base rechaza la cancelación, se muestra su mensaje', (tester) async {
       final repo = await _abrir(
         tester,
@@ -260,6 +350,7 @@ void main() {
       final repo = await _abrir(tester, rol: RolUsuario.cliente, lista: []);
       await tester.tap(find.text('Nueva reservación'));
       await tester.pumpAndSettle();
+      expect(find.textContaining('al menos 5 horas de anticipación'), findsOneWidget);
       await tester.tap(find.text('Reservar'));
       await tester.pumpAndSettle();
       expect(find.text('Elige la fecha y la hora'), findsOneWidget);
@@ -285,8 +376,61 @@ void main() {
 
       expect(repo.modificadas.single.id, 1);
       expect(repo.modificadas.single.comensales, 3);
-      expect(find.text('Reservación modificada'), findsOneWidget);
+      expect(find.textContaining('Reservación modificada'), findsOneWidget);
       await _dejarPasarAvisos(tester);
+    });
+  });
+
+  group('Aviso de las 5 horas (solo el cliente, con la app abierta)', () {
+    testWidgets('confirmada a 3 h: avisa que ya no se puede cancelar ni modificar', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.cliente,
+        lista: [
+          reservacionDePrueba(enCuanto: const Duration(hours: 3), estado: EstadoReservacion.confirmada),
+        ],
+        irAReservaciones: false,
+        conservarAvisos: true,
+      );
+      expect(find.textContaining('Faltan menos de 5 horas para tu reservación'), findsOneWidget);
+      await _dejarPasarAvisos(tester);
+    });
+
+    testWidgets('pendiente a 3 h: avisa que no confirmó a tiempo y se liberó la mesa', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.cliente,
+        lista: [reservacionDePrueba(enCuanto: const Duration(hours: 3))],
+        irAReservaciones: false,
+        conservarAvisos: true,
+      );
+      expect(find.textContaining('No confirmaste a tiempo'), findsOneWidget);
+      await _dejarPasarAvisos(tester);
+    });
+
+    testWidgets('si faltan más de 5 horas, no avisa', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.cliente,
+        lista: [reservacionDePrueba(enCuanto: const Duration(days: 2))],
+        irAReservaciones: false,
+        conservarAvisos: true,
+      );
+      expect(find.textContaining('Faltan menos de 5 horas'), findsNothing);
+      expect(find.textContaining('No confirmaste a tiempo'), findsNothing);
+    });
+
+    testWidgets('el personal no recibe este aviso', (tester) async {
+      await _abrir(
+        tester,
+        rol: RolUsuario.mesero,
+        lista: [
+          reservacionDePrueba(enCuanto: const Duration(hours: 3), estado: EstadoReservacion.confirmada),
+        ],
+        irAReservaciones: false,
+        conservarAvisos: true,
+      );
+      expect(find.textContaining('Faltan menos de 5 horas'), findsNothing);
     });
   });
 }
