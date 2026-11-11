@@ -11,8 +11,8 @@ Una sola sucursal. Diagramas: [modelo-er.webp](modelo-er.webp) y [casos-de-uso.w
 ## Roles
 | Rol | Qué hace |
 |---|---|
-| cliente | Se registra, reserva (CU-10/12/13/14), pide en línea para llevar (CU-11), consulta su pedido (CU-08) |
-| mesero | Registra pedidos en mesa o para llevar (CU-01/02), modifica/cancela (CU-04/05), consulta (CU-08), gestiona reservaciones |
+| cliente | Se registra, reserva (CU-10/12/13/14; es el único que reserva y confirma), pide en línea para llevar (CU-11), consulta su pedido (CU-08) |
+| mesero | Registra pedidos en mesa o para llevar (CU-01/02), modifica/cancela (CU-04/05), consulta (CU-08), consulta reservaciones (solo lectura) |
 | chef | Ve comandas (CU-03), actualiza estado (CU-15) |
 | gerente | Todo lo anterior + reporte (CU-07), descuentos/cortesías (CU-09), PIN de autorización |
 
@@ -50,7 +50,7 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - **RN-03**: pedido que ya no está `pendiente` no se modifica ni cancela libremente.
   El cliente pierde la opción; el mesero debe llamar `autorizar_con_pin(folio, pin)` (PIN de un gerente,
   válido 10 min). Toda cancelación crea un registro en `merma_cancelacion` y avisa a cocina.
-- **RN-07**: el cliente solo cancela/modifica una reservación con ≥ 5 horas de anticipación (el personal no tiene esa restricción).
+- **RN-07**: el cliente solo cancela/modifica una reservación con ≥ 5 horas de anticipación (el gerente no tiene esa restricción; el mesero no modifica ni cancela).
 - **RNF-04**: `bitacora_auditoria` registra quién (user, rol, empleado) insertó/modificó pedidos, detalles, reservaciones, platillos y mesas.
 - **CU-09**: `aplicar_descuento(folio, monto, es_cortesia, motivo)`, solo gerente, sobre el pedido completo. Solo sirve como registro para el reporte.
 - Precio congelado en `detalle_pedido.precio_unitario`; `total` se recalcula con triggers.
@@ -72,13 +72,12 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
-- La mesa se **asigna automáticamente**: la de menor capacidad que alcance y no se empalme.
-  Se supone una duración de **2 horas** por reservación.
-- Se crea `pendiente`. Cuando faltan ≤ 5 h, la vista `reservaciones_por_confirmar` la lista y la app del
-  cliente muestra "¿Confirmas tu reservación?" → el cliente la pasa a `confirmada`.
-- Dentro de esas 5 h el cliente ya no puede cancelar ni modificar (RN-07), solo confirmar.
-- Si el cliente modifica fecha/hora/comensales, vuelve a `pendiente` y se reasigna mesa.
-- No hay cancelación automática por falta de confirmación (requeriría tareas programadas; fuera de alcance).
+- La mesa se **asigna automáticamente**: la de menor capacidad que alcance y no se empalme. Se supone una duración de **2 horas** por reservación.
+- **Quién puede qué:** **solo el cliente crea** reservaciones (con 5 h o más de anticipación; nacen `pendiente`), y también modifica (vuelve a `pendiente`), cancela y **confirma** las suyas, todo con la ventana de 5 h (RN-07). El **mesero solo consulta**: no crea, modifica, cancela ni confirma. El **gerente modifica y cancela** las de los clientes sin límite de tiempo, pero no crea ni confirma por el cliente. Las reglas están en RLS y en `reservacion_validar()`.
+- **Confirmación:** el cliente confirma antes de que se cierre la ventana de 5 h. Si llega a las 5 h sin confirmar queda "sin confirmar" y la mesa se libera sola. No hay tareas programadas: se calcula al consultar. La vista `reservaciones_por_confirmar` lista esas reservaciones para que el personal pueda llamar al cliente.
+- **Aviso al cliente:** cuando a una reservación le faltan 5 h o menos, la app abierta muestra un aviso flotante (`AvisosReservaciones`). No hay correo ni SMS (requiere un servicio externo).
+- Las reglas viven en `reservacion_validar()` y en las políticas `reservacion_insert`/`reservacion_update` (migraciones `20261110200000_reservaciones_roles_y_confirmacion.sql` y `20261110220000_reservaciones_solo_cliente_y_gerente.sql`).
+- **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear (cliente) y modificar (cliente y gerente). Diseño provisional sin Figma.
 
 ## Contrato con la app (Flutter)
 - Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`

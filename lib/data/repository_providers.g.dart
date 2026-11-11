@@ -225,3 +225,51 @@ final class MesaRepositoryProvider
 }
 
 String _$mesaRepositoryHash() => r'9e24d402d40813a87b4ce5bcd800afb72a56ddbb';
+
+@ProviderFor(reservacionRepository)
+final reservacionRepositoryProvider = ReservacionRepositoryProvider._();
+
+final class ReservacionRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ReservacionRepository,
+          ReservacionRepository,
+          ReservacionRepository
+        >
+    with $Provider<ReservacionRepository> {
+  ReservacionRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reservacionRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reservacionRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReservacionRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ReservacionRepository create(Ref ref) {
+    return reservacionRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReservacionRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReservacionRepository>(value),
+    );
+  }
+}
+
+String _$reservacionRepositoryHash() =>
+    r'b044de343e969572f890e1b1718dbb74580188da';

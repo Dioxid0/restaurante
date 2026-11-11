@@ -8,10 +8,10 @@ import 'helpers/fakes.dart';
 
 void main() {
   test('destinos por rol', () {
-    expect(destinosPara(RolUsuario.mesero), [Destino.inicio]);
-    expect(destinosPara(RolUsuario.chef), [Destino.inicio, Destino.cocina]);
-    expect(destinosPara(RolUsuario.gerente), Destino.values);
-    expect(destinosPara(RolUsuario.cliente), [Destino.inicio]);
+   expect(destinosPara(RolUsuario.mesero), [Destino.inicio, Destino.reservaciones]);
+   expect(destinosPara(RolUsuario.chef), [Destino.inicio, Destino.cocina]);
+   expect(destinosPara(RolUsuario.gerente), Destino.values);
+   expect(destinosPara(RolUsuario.cliente), [Destino.inicio, Destino.reservaciones]);
   });
 
   testWidgets('mesero: sin pestañas', (tester) async {

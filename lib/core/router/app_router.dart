@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Icons;
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../features/reservaciones/reservaciones_screen.dart';
 
 import '../../data/repository_providers.dart';
 import '../../features/auth/login_screen.dart';
@@ -73,6 +74,13 @@ GoRouter appRouter(Ref ref) {
             ShellAutenticado(ubicacion: state.uri.path, child: child),
         routes: [
           GoRoute(path: '/inicio', builder: (_, _) => const InicioScreen()),
+          GoRoute(
+              path: '/reservaciones',
+              builder: (_, _) => const AccesoPorRol(
+                destino: Destino.reservaciones,
+                child: ReservacionesScreen(),
+              ),
+            ),
           GoRoute(
             path: '/cocina',
             builder: (_, _) => const AccesoPorRol(

@@ -7,6 +7,7 @@ import '../../domain/entities/perfil.dart';
 import '../../presentation/layouts/app_shell.dart';
 import '../../presentation/widgets/en_construccion.dart';
 import '../auth/auth_providers.dart';
+import '../reservaciones/avisos_reservaciones.dart';
 
 /// Marco de todas las pantallas con sesión: carga el perfil y arma encabezado + pestañas.
 class ShellAutenticado extends ConsumerWidget {
@@ -57,7 +58,7 @@ class ShellAutenticado extends ConsumerWidget {
           destinoActual: actual,
           alSeleccionar: (d) => context.go(d.ruta),
           alSalir: () => ref.read(loginControllerProvider.notifier).cerrarSesion(),
-          child: child,
+          child: AvisosReservaciones(activo: p.rol == RolUsuario.cliente, child: child),
         );
       },
     );
