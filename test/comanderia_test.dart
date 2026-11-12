@@ -7,11 +7,15 @@ import 'package:restaurant_app/domain/entities/perfil.dart';
 import 'helpers/app.dart';
 import 'helpers/fakes.dart';
 
-Future<FakePedidoRepository> _abrir(WidgetTester tester, List<PedidoResumen> datos) async {
+Future<FakePedidoRepository> _abrir(
+  WidgetTester tester,
+  List<PedidoResumen> datos, {
+  RolUsuario rol = RolUsuario.mesero,
+}) async {
   final pedidos = FakePedidoRepository(datos);
   await abrirApp(
     tester,
-    auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.mesero)),
+    auth: FakeAuthRepository(sesion: perfilDe(rol)),
     pedidos: pedidos,
     ventana: const Size(1500, 1000),
   );
@@ -203,5 +207,45 @@ void main() {
       pedidoDePrueba(folioDia: 2, estado: EstadoPedido.enPreparacion),
     ]);
     expect(find.text('Editar'), findsOneWidget);
+  });
+
+  testWidgets('el gerente edita también en preparación y listo, pero no entregados', (tester) async {
+    await _abrir(
+      tester,
+      [
+        pedidoDePrueba(folioDia: 1, estado: EstadoPedido.pendiente),
+        pedidoDePrueba(folioDia: 2, estado: EstadoPedido.enPreparacion),
+        pedidoDePrueba(folioDia: 3, estado: EstadoPedido.listo),
+        pedidoDePrueba(folioDia: 4, estado: EstadoPedido.entregado),
+      ],
+      rol: RolUsuario.gerente,
+    );
+    expect(find.text('Editar'), findsNWidgets(3));
+  });
+
+  testWidgets('el gerente no ve "Registrar Nuevo Pedido"; el mesero sí', (tester) async {
+    await _abrir(tester, [pedidoDePrueba(folioDia: 1)], rol: RolUsuario.gerente);
+    expect(find.text('Registrar Nuevo Pedido'), findsNothing);
+  });
+
+  testWidgets('un pedido en línea muestra el nombre del cliente y se busca por él', (tester) async {
+    await _abrir(tester, [
+      pedidoDePrueba(folioDia: 1, mesero: null, cliente: 'Ana Cliente', enLinea: true, tipo: TipoPedido.paraLlevar),
+      pedidoDePrueba(folioDia: 2, mesero: 'Juan Pérez'),
+    ]);
+    expect(find.text('Ana Cliente'), findsOneWidget);
+    expect(find.text('En línea'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'ana');
+    await tester.pumpAndSettle();
+    expect(find.text('#PED-001'), findsOneWidget);
+    expect(find.text('#PED-002'), findsNothing);
+  });
+
+  testWidgets('un pedido en línea sin nombre conocido (chef) muestra "En línea"', (tester) async {
+    await _abrir(tester, [
+      pedidoDePrueba(folioDia: 1, mesero: null, enLinea: true, tipo: TipoPedido.paraLlevar),
+    ]);
+    expect(find.text('En línea'), findsOneWidget);
   });
 }

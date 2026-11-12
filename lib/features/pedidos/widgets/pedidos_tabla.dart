@@ -26,6 +26,7 @@ class PedidosTabla extends StatelessWidget {
     required this.alEditar,
     required this.alVer,
     this.puedeOperar = true,
+    this.esGerente = false,
   }) : soloSeguimiento = false;
 
   /// Vista del cliente: solo seguimiento (sin Mesa/Tipo, mesero ni acciones).
@@ -36,6 +37,7 @@ class PedidosTabla extends StatelessWidget {
     required this.alEditar,
   })  : soloSeguimiento = true,
         puedeOperar = false,
+        esGerente = false,
         alCambiarEstado = _ignorarEstado,
         alVer = _ignorarPedido;
 
@@ -45,6 +47,9 @@ class PedidosTabla extends StatelessWidget {
 
   /// Mesero y gerente operan pedidos (editar, entregar, completar); el chef solo los consulta.
   final bool puedeOperar;
+
+  /// El gerente puede editar/cancelar también pedidos en preparación o listos (RN-03).
+  final bool esGerente;
   final AlCambiarEstado alCambiarEstado;
   final ValueChanged<PedidoResumen> alEditar;
   final ValueChanged<PedidoResumen> alVer;
@@ -194,7 +199,7 @@ class PedidosTabla extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          p.nombreMesero ?? (p.esEnLinea ? 'En línea' : ''),
+                          p.responsableEtiqueta ?? '',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: AppColors.textFaint, fontSize: 11.5),
                         ),
@@ -274,10 +279,16 @@ class PedidosTabla extends StatelessWidget {
     );
   }
 
-  /// "Editar": mesero/gerente en pedidos pendientes; el cliente también, y solo en los
-  /// suyos pendientes (RN-03). La base de datos es la que lo exige de verdad.
-  bool _puedeEditar(PedidoResumen p) =>
-      (puedeOperar || soloSeguimiento) && p.estado == EstadoPedido.pendiente;
+  /// "Editar": mesero y cliente solo en pedidos pendientes (el cliente, solo en los suyos);
+  /// el gerente también en preparación o listos, y ahí puede cancelar (RN-03).
+  /// La base de datos es la que lo exige de verdad.
+  bool _puedeEditar(PedidoResumen p) {
+    if (p.estado == EstadoPedido.pendiente) return puedeOperar || soloSeguimiento;
+    if (esGerente) {
+      return p.estado == EstadoPedido.enPreparacion || p.estado == EstadoPedido.listo;
+    }
+    return false;
+  }
 }
 
 // ------------------------------------------------------------- celdas
@@ -290,7 +301,7 @@ class _Folio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mesero = mostrarMesero ? (p.nombreMesero ?? (p.esEnLinea ? 'En línea' : null)) : null;
+    final mesero = mostrarMesero ? p.responsableEtiqueta : null;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,

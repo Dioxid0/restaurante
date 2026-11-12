@@ -229,12 +229,16 @@ void main() {
           ],
         );
 
-    Future<FakePedidoRepository> abrirEdicion(WidgetTester tester, PedidoDetalle d) async {
+    Future<FakePedidoRepository> abrirEdicion(
+      WidgetTester tester,
+      PedidoDetalle d, {
+      RolUsuario rol = RolUsuario.mesero,
+    }) async {
       final repo = FakePedidoRepository([pedidoDePrueba(folioDia: 108, estado: d.estado)])
         ..detalleParaEditar = d;
       await abrirApp(
         tester,
-        auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.mesero)),
+        auth: FakeAuthRepository(sesion: perfilDe(rol)),
         pedidos: repo,
         ventana: const Size(1500, 1000),
       );
@@ -288,6 +292,38 @@ void main() {
       expect(find.textContaining('ya no puede editarse'), findsOneWidget);
       expect(find.text('Guardar Cambios y Notificar a Cocina'), findsNothing);
     });
+
+    testWidgets('el gerente sí edita y cancela un pedido en preparación (RN-03)', (tester) async {
+      final repo = await abrirEdicion(
+        tester,
+        detalle(estado: EstadoPedido.enPreparacion),
+        rol: RolUsuario.gerente,
+      );
+      expect(find.textContaining('ya no puede editarse'), findsNothing);
+      expect(find.text('Guardar Cambios y Notificar a Cocina'), findsOneWidget);
+
+      await tester.tap(find.text('Cancelar Pedido'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).last, 'Error del cliente');
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, 'Cancelar pedido'));
+      await tester.pumpAndSettle();
+
+      expect(repo.cancelados.single, (7, 'Error del cliente'));
+      await _dejarPasarAvisos(tester);
+    });
+  });
+
+  testWidgets('el gerente no puede abrir /pedido/nuevo (solo mesero y cliente crean)', (tester) async {
+    await abrirApp(
+      tester,
+      auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.gerente)),
+      pedidos: FakePedidoRepository([]),
+      ventana: const Size(1500, 1000),
+    );
+    GoRouter.of(tester.element(find.text('Comandería y Mesas'))).go('/pedido/nuevo');
+    await tester.pumpAndSettle();
+    expect(find.text('No tienes acceso a esta sección'), findsOneWidget);
   });
 
   group('pedido en línea (cliente)', () {

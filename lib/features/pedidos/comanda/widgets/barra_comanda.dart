@@ -35,6 +35,7 @@ class BarraComanda extends StatelessWidget {
   Widget build(BuildContext context) {
     final paraLlevar = tipo == TipoPedido.paraLlevar;
     return Container(
+      width: double.infinity, // la barra oscura ocupa todo el ancho, como en el diseño
       color: AppColors.navy900,
       padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 16),
       child: Wrap(

@@ -38,7 +38,7 @@ void main() {
     expect(find.text('OPERACIÓN / COCINA'), findsOneWidget);
   });
 
-  testWidgets('gerente: ve todas las pestañas y opera pedidos', (tester) async {
+  testWidgets('gerente: ve todas las pestañas pero no toma pedidos', (tester) async {
     await abrirApp(
       tester,
       auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.gerente)),
@@ -47,7 +47,7 @@ void main() {
     expect(find.text('Inicio'), findsOneWidget);
     expect(find.text('Cocina'), findsOneWidget);
     expect(find.text('Gerencia'), findsOneWidget);
-    expect(find.text('Registrar Nuevo Pedido'), findsOneWidget);
+    expect(find.text('Registrar Nuevo Pedido'), findsNothing);
 
     await tester.tap(find.text('Gerencia'));
     await tester.pumpAndSettle();

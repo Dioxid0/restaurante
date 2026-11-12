@@ -77,6 +77,7 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
   Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
+  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado). La pantalla del mesero para ingresar el PIN de gerente (`autorizar_con_pin`) **aún no está construida**.
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
@@ -88,7 +89,8 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear (cliente) y modificar (cliente y gerente). Diseño provisional sin Figma.
 
 ## Contrato con la app (Flutter)
-- Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`
+- Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`. **Solo mesero y cliente** crean pedidos; el gerente supervisa (migración `20261112120000_pedidos_gerente_no_crea.sql`) y el chef no.
+- En la Comandería, los pedidos en línea muestran bajo el folio el **nombre del cliente** (si el rol puede leerlo: mesero y gerente; el chef ve "En línea" por RLS de `cliente_select`) y el buscador también lo encuentra.
   con `p_items = [{id_platillo, cantidad, notas_especiales}]`. No se inserta directo en `pedido`.
 - Cambiar estado / cancelar: `update` sobre `pedido` (cancelar exige `motivo_cancelacion`).
 - Los errores de reglas llegan como `PostgrestException` con mensaje en español listo para mostrar.

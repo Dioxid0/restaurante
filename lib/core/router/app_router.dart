@@ -32,7 +32,10 @@ class _RefrescoPorStream extends ChangeNotifier {
   }
 }
 
-/// Quién puede crear/editar pedidos (el chef no).
+/// Quién puede crear pedidos: mesero y cliente (el gerente y el chef no).
+const _rolesCrearPedido = {RolUsuario.mesero, RolUsuario.cliente};
+
+/// Quién puede editar/cancelar pedidos: también el gerente (el chef no).
 const _rolesDePedido = {RolUsuario.mesero, RolUsuario.gerente, RolUsuario.cliente};
 
 /// Rutas públicas (sin sesión).
@@ -59,7 +62,7 @@ GoRouter appRouter(Ref ref) {
       // Pantalla completa de comanda (sin encabezado general): crear, editar y pedido del cliente.
       GoRoute(
         path: '/pedido/nuevo',
-        builder: (_, _) => const AccesoRoles(roles: _rolesDePedido, child: PedidoFormScreen()),
+        builder: (_, _) => const AccesoRoles(roles: _rolesCrearPedido, child: PedidoFormScreen()),
       ),
       GoRoute(
         path: '/pedido/:folio/editar',

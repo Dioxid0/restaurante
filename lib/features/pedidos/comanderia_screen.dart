@@ -74,7 +74,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
       if (q.isEmpty) return true;
       return p.folioEtiqueta.toLowerCase().contains(q) ||
           (p.mesaEtiqueta ?? '').toLowerCase().contains(q) ||
-          (p.nombreMesero ?? '').toLowerCase().contains(q);
+          (p.responsableEtiqueta ?? '').toLowerCase().contains(q);
     }).toList();
   }
 
@@ -85,6 +85,8 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     final rol = ref.watch(perfilActualProvider).value?.rol;
     // Mesero y gerente operan pedidos; el chef solo los consulta (su flujo va en "Cocina").
     final puedeOperar = rol == RolUsuario.mesero || rol == RolUsuario.gerente;
+    // Tomar pedidos es del mesero; el gerente supervisa, edita y cancela.
+    final puedeCrear = rol == RolUsuario.mesero;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 26, 28, 28),
@@ -95,11 +97,11 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _Titulo(
-                alNuevo: puedeOperar ? () => context.go('/pedido/nuevo') : null,
+                alNuevo: puedeCrear ? () => context.go('/pedido/nuevo') : null,
               ),
               const SizedBox(height: 22),
               if (pedidos.hasValue)
-                _contenido(pedidos.requireValue, ahora, puedeOperar)
+                _contenido(pedidos.requireValue, ahora, puedeOperar, rol == RolUsuario.gerente)
               else if (pedidos.hasError)
                 _Error(alReintentar: () => ref.invalidate(pedidosDelDiaProvider))
               else
@@ -114,7 +116,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     );
   }
 
-  Widget _contenido(List<PedidoResumen> todos, DateTime ahora, bool puedeOperar) {
+  Widget _contenido(List<PedidoResumen> todos, DateTime ahora, bool puedeOperar, bool esGerente) {
     final filtrados = _filtrar(todos);
     final paginas = (filtrados.length / _porPagina).ceil().clamp(1, 1 << 30);
     final pagina = _pagina.clamp(0, paginas - 1);
@@ -146,6 +148,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             pedidos: visibles,
             ahora: ahora,
             puedeOperar: puedeOperar,
+            esGerente: esGerente,
             alCambiarEstado: _cambiarEstado,
             alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
             alVer: (p) => mostrarDetallePedido(context, p.folio),
@@ -195,7 +198,7 @@ class _EncabezadoLista extends StatelessWidget {
       onChanged: alBuscar,
       style: const TextStyle(fontSize: 13),
       decoration: InputDecoration(
-        hintText: 'Buscar folio, mesa o empleado...',
+        hintText: 'Buscar folio, mesa, empleado o cliente...',
         hintStyle: const TextStyle(color: AppColors.textFaint, fontSize: 13),
         prefixIcon: const Icon(Icons.search, size: 19, color: AppColors.textFaint),
         filled: true,
