@@ -56,6 +56,13 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Precio congelado en `detalle_pedido.precio_unitario`; `total` se recalcula con triggers.
 - Cocina recibe `notificacion_cocina` (`nuevo`, `modificado`, `cancelado`); la app se suscribe por Realtime.
 
+## Cocina (CU-03, CU-06, CU-15)
+- Pestaña **Cocina** (chef y gerente). Tablero de los pedidos **de hoy** en tres columnas: Pendiente, En preparación y Listo, los más antiguos primero, con platillos, cantidades, notas, tipo/mesa y minutos transcurridos.
+- **Estados:** el chef solo avanza `pendiente → en_preparacion → listo` (trigger `pedido_antes_update`; cualquier otra transición se rechaza). Entregar y completar es del mesero. Un pedido cancelado sale del tablero.
+- **Avisos (CU-06):** panel con las `notificacion_cocina` sin atender (`atendida = false`), con botón "Entendido" (uno o todos; el chef solo puede actualizar la columna `atendida`). Si llega un aviso nuevo con la pantalla abierta, aparece además un aviso flotante.
+- Todo se actualiza por Realtime (`pedido` y `notificacion_cocina`). No hizo falta migración: reglas y permisos ya existían.
+- App: `features/cocina`, repositorio `CocinaRepository` (consulta con renglones en una sola petición); el cambio de estado reutiliza `PedidoRepository.actualizarEstado`.
+
 ## Menú y comanda
 - `platillo.categoria` es una lista fija: Bebidas, Antojitos/Entradas, Platos Fuertes, Postres, Especialidades.
 - `platillo.imagen_url` (opcional). Sin imagen, la app muestra un ícono de la categoría.

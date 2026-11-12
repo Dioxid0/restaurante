@@ -15,6 +15,7 @@ class BotonConfirmable extends StatelessWidget {
     required this.alConfirmar,
     this.detalle,
     this.textoConfirmar = 'Confirmar',
+    this.etiqueta,
     this.color = AppColors.textMuted,
     this.fondo = Colors.white,
     this.borde = AppColors.border,
@@ -25,6 +26,9 @@ class BotonConfirmable extends StatelessWidget {
   final String titulo;
   final String? detalle;
   final String textoConfirmar;
+
+  /// Si se indica, el disparador es un botón con texto (p. ej. en Cocina) en vez de un ícono.
+  final String? etiqueta;
   final VoidCallback alConfirmar;
   final Color color;
   final Color fondo;
@@ -55,14 +59,34 @@ class BotonConfirmable extends StatelessWidget {
           alConfirmar: alConfirmar,
         ),
       ],
-      builder: (context, controlador, _) => BotonIcono(
-        icono: icono,
-        tooltip: tooltip,
-        color: color,
-        fondo: fondo,
-        borde: borde,
-        alPresionar: () => controlador.isOpen ? controlador.close() : controlador.open(),
-      ),
+      builder: (context, controlador, _) {
+        void alternar() => controlador.isOpen ? controlador.close() : controlador.open();
+        if (etiqueta == null) {
+          return BotonIcono(
+            icono: icono,
+            tooltip: tooltip,
+            color: color,
+            fondo: fondo,
+            borde: borde,
+            alPresionar: alternar,
+          );
+        }
+        return Tooltip(
+          message: tooltip,
+          child: FilledButton.icon(
+            onPressed: alternar,
+            icon: Icon(icono, size: 18),
+            label: Text(etiqueta!),
+            style: FilledButton.styleFrom(
+              backgroundColor: color,
+              minimumSize: const Size(0, 44),
+              padding: const EdgeInsets.symmetric(horizontal: 18),
+              textStyle: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+            ),
+          ),
+        );
+      },
     );
   }
 }
