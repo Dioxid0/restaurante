@@ -66,7 +66,7 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - "Para llevar" admite la casilla **Sin mesa** (marcada por defecto): no asocia mesa.
 - **Una sola pantalla de comanda** (`/pedido/nuevo` y `/pedido/:folio/editar`) para crear, editar y para que
   el cliente pida en línea (el cliente no elige mesa ni tipo: siempre es para llevar).
-- **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros, Mesa/Tipo ni acciones. La política `pedido_select` ya solo le devuelve los suyos; no hizo falta migración.
+- **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros ni Mesa/Tipo. La única acción es **Editar**, visible solo en pedidos `pendiente` (RN-03); abre la misma comanda (siempre para llevar), donde también puede cancelar con motivo. Cuando el pedido pasa a preparación el botón desaparece y la base lo rechaza ("pide ayuda al mesero"). La política `pedido_select` ya solo le devuelve los suyos y `actualizar_pedido`/`pedido_antes_update` ya exigían estas reglas; no hizo falta migración.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
   Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
