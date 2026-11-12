@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Icons;
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import '../../features/cocina/cocina_screen.dart';
 import '../../features/reservaciones/reservaciones_screen.dart';
 
 import '../../data/repository_providers.dart';
@@ -14,7 +14,6 @@ import '../../domain/entities/perfil.dart';
 import '../../features/home/inicio_screen.dart';
 import '../../features/pedidos/comanda/pedido_form_screen.dart';
 import '../../features/shell/shell_autenticado.dart';
-import '../../presentation/widgets/en_construccion.dart';
 import 'destinos.dart';
 
 part 'app_router.g.dart';
@@ -85,11 +84,7 @@ GoRouter appRouter(Ref ref) {
             path: '/cocina',
             builder: (_, _) => const AccesoPorRol(
               destino: Destino.cocina,
-              child: EnConstruccion(
-                titulo: 'Cocina',
-                descripcion: 'La vista de cocina (comandas para el chef) está en diseño.',
-                icono: Icons.soup_kitchen_outlined,
-              ),
+              child: CocinaScreen(),
             ),
           ),
           GoRoute(

@@ -273,3 +273,49 @@ final class ReservacionRepositoryProvider
 
 String _$reservacionRepositoryHash() =>
     r'b044de343e969572f890e1b1718dbb74580188da';
+
+@ProviderFor(cocinaRepository)
+final cocinaRepositoryProvider = CocinaRepositoryProvider._();
+
+final class CocinaRepositoryProvider
+    extends
+        $FunctionalProvider<
+          CocinaRepository,
+          CocinaRepository,
+          CocinaRepository
+        >
+    with $Provider<CocinaRepository> {
+  CocinaRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'cocinaRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$cocinaRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<CocinaRepository> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  CocinaRepository create(Ref ref) {
+    return cocinaRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(CocinaRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<CocinaRepository>(value),
+    );
+  }
+}
+
+String _$cocinaRepositoryHash() => r'924c7193fc98c946655de1c45dd7556dae7341f1';

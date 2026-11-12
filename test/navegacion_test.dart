@@ -35,7 +35,7 @@ void main() {
 
     await tester.tap(find.text('Cocina'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('vista de cocina'), findsOneWidget);
+    expect(find.text('OPERACIÓN / COCINA'), findsOneWidget);
   });
 
   testWidgets('gerente: ve todas las pestañas y opera pedidos', (tester) async {
