@@ -11,9 +11,10 @@ import 'widgets/pedidos_tabla.dart';
 
 /// Inicio del cliente (CU-08): seguimiento de sus pedidos de hoy.
 ///
-/// Es la Comandería del mesero simplificada: sin filtros ni buscador, sin Mesa/Tipo y sin
-/// acciones; solo Folio, Hora, Estado y Total. La base (RLS) solo entrega los pedidos del
-/// propio cliente, y se actualiza sola en tiempo real.
+/// Es la Comandería del mesero simplificada: sin filtros ni buscador y sin Mesa/Tipo; solo
+/// Folio, Hora, Estado, Total y "Editar" (únicamente mientras el pedido está pendiente, RN-03;
+/// la base lo exige de verdad). La base (RLS) solo entrega los pedidos del propio cliente,
+/// y se actualiza sola en tiempo real.
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
 class MisPedidosScreen extends ConsumerStatefulWidget {
   const MisPedidosScreen({super.key});
@@ -92,7 +93,11 @@ class _MisPedidosScreenState extends ConsumerState<MisPedidosScreen> {
           if (todos.isEmpty)
             const _SinPedidos()
           else
-            PedidosTabla.seguimiento(pedidos: visibles, ahora: ahora),
+            PedidosTabla.seguimiento(
+              pedidos: visibles,
+              ahora: ahora,
+              alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
+            ),
           PaginadorPedidos(
             mostrando: visibles.length,
             total: todos.length,

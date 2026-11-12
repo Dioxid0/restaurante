@@ -15,8 +15,8 @@ void _ignorarPedido(PedidoResumen pedido) {}
 ///  * Escritorio / tablet: tabla de 6 columnas (el mesero va en gris bajo el folio).
 ///  * Pantallas angostas (< 700 px): una tarjeta por pedido.
 ///
-/// Con [PedidosTabla.seguimiento] (el cliente) solo se muestra Folio, Hora, Estado y Total:
-/// sin Mesa/Tipo, sin mesero y sin acciones.
+/// Con [PedidosTabla.seguimiento] (el cliente) se muestra Folio, Hora, Estado, Total y una
+/// sola acción: "Editar", solo en los pedidos pendientes (RN-03). Sin Mesa/Tipo ni mesero.
 class PedidosTabla extends StatelessWidget {
   const PedidosTabla({
     super.key,
@@ -29,11 +29,14 @@ class PedidosTabla extends StatelessWidget {
   }) : soloSeguimiento = false;
 
   /// Vista del cliente: solo seguimiento (sin Mesa/Tipo, mesero ni acciones).
-  const PedidosTabla.seguimiento({super.key, required this.pedidos, required this.ahora})
-      : soloSeguimiento = true,
+  const PedidosTabla.seguimiento({
+    super.key,
+    required this.pedidos,
+    required this.ahora,
+    required this.alEditar,
+  })  : soloSeguimiento = true,
         puedeOperar = false,
         alCambiarEstado = _ignorarEstado,
-        alEditar = _ignorarPedido,
         alVer = _ignorarPedido;
 
   final List<PedidoResumen> pedidos;
@@ -55,8 +58,8 @@ class PedidosTabla extends StatelessWidget {
   // Anchos relativos de las 6 columnas: folio, hora, mesa/tipo, estado, total, acciones.
   static const _flex = [16, 12, 15, 18, 12, 27];
 
-  // Vista del cliente: folio, hora, estado, total.
-  static const _flexSeguimiento = [22, 22, 30, 26];
+  // Vista del cliente: folio, hora, estado, total, acciones (solo "Editar").
+  static const _flexSeguimiento = [18, 18, 26, 16, 22];
 
   List<int> get _anchos => soloSeguimiento ? _flexSeguimiento : _flex;
 
@@ -89,7 +92,7 @@ class PedidosTabla extends StatelessWidget {
             if (!soloSeguimiento) const _Encabezado('MESA / TIPO'),
             const _Encabezado('ESTADO'),
             const _Encabezado('TOTAL'),
-            if (!soloSeguimiento) const _Encabezado('ACCIONES', alinearDerecha: true),
+            const _Encabezado('ACCIONES', alinearDerecha: true),
           ],
         ),
         if (pedidos.isEmpty) const _SinResultados(),
@@ -111,7 +114,7 @@ class PedidosTabla extends StatelessWidget {
           formatoMoneda(p.total),
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
         ),
-        if (!soloSeguimiento) Align(alignment: Alignment.centerRight, child: _acciones(p)),
+        Align(alignment: Alignment.centerRight, child: _acciones(p)),
       ],
     );
   }
@@ -181,6 +184,10 @@ class PedidosTabla extends StatelessWidget {
                       ),
                   ],
                 ),
+                if (soloSeguimiento && _puedeEditar(p)) ...[
+                  const SizedBox(height: 10),
+                  Align(alignment: Alignment.centerRight, child: _acciones(p)),
+                ],
                 if (!soloSeguimiento) ...[
                   const SizedBox(height: 10),
                   Row(
@@ -214,7 +221,7 @@ class PedidosTabla extends StatelessWidget {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (puedeOperar && p.estado == EstadoPedido.pendiente) ...[
+        if (_puedeEditar(p)) ...[
           OutlinedButton.icon(
             onPressed: () => alEditar(p),
             icon: const Icon(Icons.edit_outlined, size: 15),
@@ -229,7 +236,7 @@ class PedidosTabla extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
             ),
           ),
-          const SizedBox(width: 6),
+          if (!soloSeguimiento) const SizedBox(width: 6),
         ],
         if (puedeOperar && p.estado == EstadoPedido.listo) ...[
           BotonConfirmable(
@@ -257,14 +264,20 @@ class PedidosTabla extends StatelessWidget {
           ),
           const SizedBox(width: 6),
         ],
-        BotonIcono(
-          icono: Icons.visibility_outlined,
-          tooltip: 'Ver detalle',
-          alPresionar: () => alVer(p),
-        ),
+        if (!soloSeguimiento)
+          BotonIcono(
+            icono: Icons.visibility_outlined,
+            tooltip: 'Ver detalle',
+            alPresionar: () => alVer(p),
+          ),
       ],
     );
   }
+
+  /// "Editar": mesero/gerente en pedidos pendientes; el cliente también, y solo en los
+  /// suyos pendientes (RN-03). La base de datos es la que lo exige de verdad.
+  bool _puedeEditar(PedidoResumen p) =>
+      (puedeOperar || soloSeguimiento) && p.estado == EstadoPedido.pendiente;
 }
 
 // ------------------------------------------------------------- celdas
