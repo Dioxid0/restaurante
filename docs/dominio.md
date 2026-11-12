@@ -24,10 +24,10 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 
 | Rol | Secciones |
 |---|---|
-| mesero | Inicio |
+| mesero | Inicio, Reservaciones |
 | chef | Inicio, Cocina |
-| gerente | Inicio, Cocina, Gerencia |
-| cliente | Inicio |
+| gerente | Inicio, Reservaciones, Cocina, Gerencia |
+| cliente | Inicio ("Mis pedidos"), Reservaciones |
 
 ### Modelo de seguridad
 - La autorización la decide la base (RLS, triggers y RPC con SECURITY DEFINER); la app solo oculta secciones por comodidad.
@@ -66,6 +66,7 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - "Para llevar" admite la casilla **Sin mesa** (marcada por defecto): no asocia mesa.
 - **Una sola pantalla de comanda** (`/pedido/nuevo` y `/pedido/:folio/editar`) para crear, editar y para que
   el cliente pida en línea (el cliente no elige mesa ni tipo: siempre es para llevar).
+- **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros, Mesa/Tipo ni acciones. La política `pedido_select` ya solo le devuelve los suyos; no hizo falta migración.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
   Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.

@@ -39,6 +39,7 @@ enum FiltroEstado {
 
 /// Pedidos por página (igual que en el diseño).
 const _porPagina = 5;
+const pedidosPorPagina = _porPagina;
 
 class ComanderiaScreen extends ConsumerStatefulWidget {
   const ComanderiaScreen({super.key});
@@ -149,7 +150,7 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
             alVer: (p) => mostrarDetallePedido(context, p.folio),
           ),
-          _Paginador(
+          PaginadorPedidos(
             mostrando: visibles.length,
             total: filtrados.length,
             pagina: pagina,
@@ -371,8 +372,9 @@ class _SelectorEstado extends StatelessWidget {
   }
 }
 
-class _Paginador extends StatelessWidget {
-  const _Paginador({
+class PaginadorPedidos extends StatelessWidget {
+  const PaginadorPedidos({
+    super.key,
     required this.mostrando,
     required this.total,
     required this.pagina,

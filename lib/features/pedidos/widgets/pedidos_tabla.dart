@@ -8,9 +8,15 @@ import 'pedido_chips.dart';
 
 typedef AlCambiarEstado = void Function(PedidoResumen pedido, EstadoPedido nuevo);
 
+void _ignorarEstado(PedidoResumen pedido, EstadoPedido nuevo) {}
+void _ignorarPedido(PedidoResumen pedido) {}
+
 /// Lista de comandas. Las filas se pasan ya paginadas.
 ///  * Escritorio / tablet: tabla de 6 columnas (el mesero va en gris bajo el folio).
 ///  * Pantallas angostas (< 700 px): una tarjeta por pedido.
+///
+/// Con [PedidosTabla.seguimiento] (el cliente) solo se muestra Folio, Hora, Estado y Total:
+/// sin Mesa/Tipo, sin mesero y sin acciones.
 class PedidosTabla extends StatelessWidget {
   const PedidosTabla({
     super.key,
@@ -20,10 +26,19 @@ class PedidosTabla extends StatelessWidget {
     required this.alEditar,
     required this.alVer,
     this.puedeOperar = true,
-  });
+  }) : soloSeguimiento = false;
+
+  /// Vista del cliente: solo seguimiento (sin Mesa/Tipo, mesero ni acciones).
+  const PedidosTabla.seguimiento({super.key, required this.pedidos, required this.ahora})
+      : soloSeguimiento = true,
+        puedeOperar = false,
+        alCambiarEstado = _ignorarEstado,
+        alEditar = _ignorarPedido,
+        alVer = _ignorarPedido;
 
   final List<PedidoResumen> pedidos;
   final DateTime ahora;
+  final bool soloSeguimiento;
 
   /// Mesero y gerente operan pedidos (editar, entregar, completar); el chef solo los consulta.
   final bool puedeOperar;
@@ -39,6 +54,11 @@ class PedidosTabla extends StatelessWidget {
 
   // Anchos relativos de las 6 columnas: folio, hora, mesa/tipo, estado, total, acciones.
   static const _flex = [16, 12, 15, 18, 12, 27];
+
+  // Vista del cliente: folio, hora, estado, total.
+  static const _flexSeguimiento = [22, 22, 30, 26];
+
+  List<int> get _anchos => soloSeguimiento ? _flexSeguimiento : _flex;
 
   @override
   Widget build(BuildContext context) {
@@ -63,13 +83,13 @@ class PedidosTabla extends StatelessWidget {
         _fila(
           fondo: const Color(0xFFF8FAFC),
           alto: 40,
-          celdas: const [
-            _Encabezado('FOLIO'),
-            _Encabezado('HORA'),
-            _Encabezado('MESA / TIPO'),
-            _Encabezado('ESTADO'),
-            _Encabezado('TOTAL'),
-            _Encabezado('ACCIONES', alinearDerecha: true),
+          celdas: [
+            const _Encabezado('FOLIO'),
+            const _Encabezado('HORA'),
+            if (!soloSeguimiento) const _Encabezado('MESA / TIPO'),
+            const _Encabezado('ESTADO'),
+            const _Encabezado('TOTAL'),
+            if (!soloSeguimiento) const _Encabezado('ACCIONES', alinearDerecha: true),
           ],
         ),
         if (pedidos.isEmpty) const _SinResultados(),
@@ -83,15 +103,15 @@ class PedidosTabla extends StatelessWidget {
       fondo: p.estado == EstadoPedido.pendiente ? AppColors.amberRow : Colors.white,
       alto: 58,
       celdas: [
-        _Folio(p),
+        _Folio(p, mostrarMesero: !soloSeguimiento),
         _Hora(p, ahora),
-        _MesaTipo(p),
+        if (!soloSeguimiento) _MesaTipo(p),
         EstadoChip(p.estado),
         Text(
           formatoMoneda(p.total),
           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5),
         ),
-        Align(alignment: Alignment.centerRight, child: _acciones(p)),
+        if (!soloSeguimiento) Align(alignment: Alignment.centerRight, child: _acciones(p)),
       ],
     );
   }
@@ -112,7 +132,7 @@ class PedidosTabla extends StatelessWidget {
         children: [
           for (var i = 0; i < celdas.length; i++)
             Expanded(
-              flex: _flex[i],
+              flex: _anchos[i],
               child: Align(alignment: Alignment.centerLeft, child: celdas[i]),
             ),
         ],
@@ -151,29 +171,36 @@ class PedidosTabla extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    _MesaTipo(p),
-                    const Spacer(),
+                    if (!soloSeguimiento) ...[_MesaTipo(p), const Spacer()],
                     _Hora(p, ahora, enLinea: true),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        p.nombreMesero ?? (p.esEnLinea ? 'En línea' : ''),
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textFaint, fontSize: 11.5),
+                    if (soloSeguimiento) const Spacer(),
+                    if (soloSeguimiento)
+                      Text(
+                        formatoMoneda(p.total),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
                       ),
-                    ),
-                    Text(
-                      formatoMoneda(p.total),
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 10),
-                Align(alignment: Alignment.centerRight, child: _acciones(p)),
+                if (!soloSeguimiento) ...[
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          p.nombreMesero ?? (p.esEnLinea ? 'En línea' : ''),
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textFaint, fontSize: 11.5),
+                        ),
+                      ),
+                      Text(
+                        formatoMoneda(p.total),
+                        style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Align(alignment: Alignment.centerRight, child: _acciones(p)),
+                ],
               ],
             ),
           ),
@@ -244,12 +271,13 @@ class PedidosTabla extends StatelessWidget {
 
 /// "#PED-108" con el mesero en gris debajo.
 class _Folio extends StatelessWidget {
-  const _Folio(this.p);
+  const _Folio(this.p, {this.mostrarMesero = true});
   final PedidoResumen p;
+  final bool mostrarMesero;
 
   @override
   Widget build(BuildContext context) {
-    final mesero = p.nombreMesero ?? (p.esEnLinea ? 'En línea' : null);
+    final mesero = mostrarMesero ? (p.nombreMesero ?? (p.esEnLinea ? 'En línea' : null)) : null;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,
