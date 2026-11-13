@@ -13,7 +13,7 @@
 - Las interfaces están en Figma; el usuario pasará las pantallas por etapas.
 
 ## Supabase
-- Desarrollo con Supabase **local** (Docker Desktop + CLI vía `npx supabase`). Aún sin proyecto en la nube.
+- Desarrollo con Supabase **local** (Docker Desktop + CLI vía `npx supabase`). Existe también un proyecto en la **nube** (Supabase, plan gratuito) con el mismo esquema: la app elige la base al compilar (`--dart-define`), el código no cambia. Scripts: `scripts/configurar_nube.ps1` (URL + llave pública en `.env.nube.json`), `run_nube.ps1`, `preparar_semilla_nube.ps1` (semilla con contraseñas nuevas, ignorada por Git), `compilar.ps1` (.exe/.apk, uno por entorno). **Con este CLI, `db push` apunta a la base local; para la nube usar `--remote`.** Nunca iniciar sesión con contraseñas en la base de la nube desde pruebas automáticas (no es un entorno de pruebas) ni reutilizar las del `seed.sql`. Pasos completos en el README (secciones 14 y 15).
 - Cambios de esquema solo mediante migraciones en `supabase/migrations/`.
 - **RLS activado en todas las tablas** (`alter table ... enable row level security` + políticas).
 - Nunca usar `service_role`/secret key en el cliente. Solo URL + anon/publishable key.
