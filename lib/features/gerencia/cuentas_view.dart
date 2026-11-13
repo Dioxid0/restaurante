@@ -6,6 +6,7 @@ import '../../domain/entities/cuenta_personal.dart';
 import '../../domain/errors.dart';
 import '../auth/auth_providers.dart';
 import 'gerencia_providers.dart';
+import 'widgets/editar_cuenta_dialog.dart';
 import 'widgets/nueva_cuenta_dialog.dart';
 
 /// Gerencia → Cuentas: administración de cuentas de personal.
@@ -111,6 +112,17 @@ class CuentasView extends ConsumerWidget {
                   data: (lista) => _Tabla(
                     cuentas: lista,
                     idPropio: yo?.id,
+                    alEditar: (c) async {
+                      final ok = await showDialog<bool>(
+                        context: context,
+                        builder: (_) => EditarCuentaDialog(cuenta: c, esPropia: c.idEmpleado == yo?.id),
+                      );
+                      if (ok == true && context.mounted) {
+                        ScaffoldMessenger.of(context)
+                          ..hideCurrentSnackBar()
+                          ..showSnackBar(const SnackBar(content: Text('Cuenta actualizada')));
+                      }
+                    },
                     alCambiarActivo: (c, activo) async {
                       try {
                         await ref
@@ -135,13 +147,19 @@ class CuentasView extends ConsumerWidget {
 }
 
 class _Tabla extends StatelessWidget {
-  const _Tabla({required this.cuentas, required this.idPropio, required this.alCambiarActivo});
+  const _Tabla({
+    required this.cuentas,
+    required this.idPropio,
+    required this.alCambiarActivo,
+    required this.alEditar,
+  });
 
   final List<CuentaPersonal> cuentas;
   final int? idPropio;
   final Future<void> Function(CuentaPersonal, bool) alCambiarActivo;
+  final Future<void> Function(CuentaPersonal) alEditar;
 
-  static const _flex = [24, 20, 14, 14, 12, 16];
+  static const _flex = [22, 18, 12, 12, 12, 24];
 
   Widget _fila(List<Widget> celdas, {Color fondo = Colors.white, double alto = 52}) => Container(
         height: alto,
@@ -184,14 +202,21 @@ class _Tabla extends StatelessWidget {
             Text(c.rol.etiqueta, style: const TextStyle(fontSize: 13)),
             Text(c.turno ?? '—', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
             _EstadoCuenta(activo: c.activo),
-            Align(
-              alignment: Alignment.centerRight,
-              child: c.idEmpleado == idPropio
-                  ? const Text('(tú)', style: TextStyle(color: AppColors.textFaint, fontSize: 12))
-                  : TextButton(
-                      onPressed: () => alCambiarActivo(c, !c.activo),
-                      child: Text(c.activo ? 'Desactivar' : 'Activar'),
-                    ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(onPressed: () => alEditar(c), child: const Text('Editar')),
+                if (c.idEmpleado == idPropio)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 8),
+                    child: Text('(tú)', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+                  )
+                else
+                  TextButton(
+                    onPressed: () => alCambiarActivo(c, !c.activo),
+                    child: Text(c.activo ? 'Desactivar' : 'Activar'),
+                  ),
+              ],
             ),
           ]),
       ],

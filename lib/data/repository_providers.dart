@@ -17,6 +17,8 @@ import '../domain/repositories/solicitud_repository.dart';
 import 'supabase_solicitud_repository.dart';
 import '../domain/repositories/reporte_repository.dart';
 import 'supabase_reporte_repository.dart';
+import '../domain/repositories/bitacora_repository.dart';
+import 'supabase_bitacora_repository.dart';
 
 part 'repository_providers.g.dart';
 
@@ -52,3 +54,6 @@ SolicitudRepository solicitudRepository(Ref ref) => SupabaseSolicitudRepository(
 
 @Riverpod(keepAlive: true)
 ReporteRepository reporteRepository(Ref ref) => SupabaseReporteRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+BitacoraRepository bitacoraRepository(Ref ref) => SupabaseBitacoraRepository(Supabase.instance.client);

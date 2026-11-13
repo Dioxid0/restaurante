@@ -36,4 +36,15 @@ class CuentasPersonal extends _$CuentasPersonal {
     await ref.read(empleadoRepositoryProvider).cambiarActivo(idEmpleado, activo: activo);
     ref.invalidateSelf();
   }
+
+  /// Cambia nombre, turno y rol; si falla lanza [ErrorDeNegocio] con el motivo.
+  Future<void> editar(
+    int idEmpleado, {
+    required String nombre,
+    String? turno,
+    required RolUsuario rol,
+  }) async {
+    await ref.read(empleadoRepositoryProvider).editar(idEmpleado, nombre: nombre, turno: turno, rol: rol);
+    ref.invalidateSelf();
+  }
 }

@@ -97,6 +97,12 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Las reglas viven en `reservacion_validar()` y en las políticas `reservacion_insert`/`reservacion_update` (migraciones `20261110200000_reservaciones_roles_y_confirmacion.sql` y `20261110220000_reservaciones_solo_cliente_y_gerente.sql`).
 - **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear (cliente) y modificar (cliente y gerente). Diseño provisional sin Figma.
 
+## Administración del gerente (Entrega C)
+- **Personal:** el gerente edita nombre, turno y rol con la RPC `editar_empleado` y activa/desactiva con `update` solo de la columna `activo` (la base ya no deja cambiar `usuario`, `user_id` ni `rol` por UPDATE directo). El trigger `empleado_proteger` impide desactivarte o cambiarte tu propio rol y dejar el sistema sin gerente activo.
+- **Menú y mesas:** CRUD solo del gerente (RLS ya existente). `platillo.nombre` no vacío y único (sin importar mayúsculas), `mesa.numero_mesa > 0`. Un platillo o mesa con pedidos no se borra (FK): el platillo se marca "no disponible". El estado de la mesa lo calcula la base; la app no lo edita.
+- **Bitácora (RNF-04):** RPC `bitacora_gerencial(p_tabla, p_limite)` (solo gerente, máx. 200) con quién, cuándo y los campos que cambiaron. Secciones: pedidos, renglones, reservaciones, solicitudes, menú, mesas y cuentas.
+- Migración: `20261113100000_gerencia_administracion.sql`.
+
 ## Contrato con la app (Flutter)
 - Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`. **Solo mesero y cliente** crean pedidos; el gerente supervisa (migración `20261112120000_pedidos_gerente_no_crea.sql`) y el chef no.
 - En la Comandería, los pedidos en línea muestran bajo el folio el **nombre del cliente** (si el rol puede leerlo: mesero y gerente; el chef ve "En línea" por RLS de `cliente_select`) y el buscador también lo encuentra.
