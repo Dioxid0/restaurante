@@ -1,4 +1,4 @@
-# Corre la app en Android contra Supabase local.
+﻿# Corre la app en Android contra Supabase local.
 # El teléfono/emulador NO puede usar 127.0.0.1 (ahí "localhost" es el propio teléfono):
 #   * Emulador de Android Studio -> 10.0.2.2 (alias del equipo anfitrión). Es el valor por defecto.
 #   * Teléfono real (USB o Wi-Fi) -> la IP de esta laptop en la red compartida: -Servidor 192.168.x.x
