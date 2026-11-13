@@ -23,21 +23,6 @@ class CocinaScreen extends ConsumerStatefulWidget {
 }
 
 class _CocinaScreenState extends ConsumerState<CocinaScreen> {
-  /// Avisos ya vistos en esta sesión: solo los nuevos disparan el aviso flotante.
-  Set<int>? _vistos;
-
-  void _avisarNuevos(List<AvisoCocina> lista) {
-    final ids = lista.map((a) => a.idNotificacion).toSet();
-    final anteriores = _vistos;
-    _vistos = ids;
-    if (anteriores == null) return; // primera carga: no se avisa de lo que ya estaba
-    final nuevos = lista.where((a) => !anteriores.contains(a.idNotificacion)).toList();
-    if (nuevos.isEmpty) return;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) mostrarToast(context, nuevos.map((a) => a.mensaje).join('\n'));
-    });
-  }
-
   Future<void> _avanzar(PedidoCocina p, EstadoPedido nuevo) async {
     try {
       await ref.read(cocinaPedidosProvider.notifier).avanzar(p.folio, nuevo);
@@ -56,10 +41,6 @@ class _CocinaScreenState extends ConsumerState<CocinaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(avisosCocinaProvider, (_, siguiente) {
-      final lista = siguiente.value;
-      if (lista != null) _avisarNuevos(lista);
-    });
     final pedidos = ref.watch(cocinaPedidosProvider);
     final avisos = ref.watch(avisosCocinaProvider).value ?? const <AvisoCocina>[];
     final ahora = ref.watch(relojProvider).value ?? DateTime.now();

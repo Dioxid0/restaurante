@@ -59,7 +59,7 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 ## Cocina (CU-03, CU-06, CU-15)
 - Pestaña **Cocina** (chef y gerente). Tablero de los pedidos **de hoy** en tres columnas: Pendiente, En preparación y Listo, los más antiguos primero, con platillos, cantidades, notas, tipo/mesa y minutos transcurridos.
 - **Estados:** el chef solo avanza `pendiente → en_preparacion → listo` (trigger `pedido_antes_update`; cualquier otra transición se rechaza). Entregar y completar es del mesero. Un pedido cancelado sale del tablero.
-- **Avisos (CU-06):** panel con las `notificacion_cocina` sin atender (`atendida = false`), con botón "Entendido" (uno o todos; el chef solo puede actualizar la columna `atendida`). Si llega un aviso nuevo con la pantalla abierta, aparece además un aviso flotante.
+- **Avisos (CU-06):** panel con las `notificacion_cocina` sin atender (`atendida = false`), con botón "Entendido" (uno o todos; el chef solo puede actualizar la columna `atendida`). Solo se listan los avisos de pedidos **de hoy** (los de días anteriores no se arrastran). Si llega un aviso nuevo, el **chef** ve un aviso flotante **en cualquier pestaña** (`AvisosCocinaFlotantes`, en el marco de la app), no solo en Cocina. El gerente ve la pestaña Cocina pero no recibe estos avisos flotantes (son para quien prepara).
 - Todo se actualiza por Realtime (`pedido` y `notificacion_cocina`). No hizo falta migración: reglas y permisos ya existían.
 - App: `features/cocina`, repositorio `CocinaRepository` (consulta con renglones en una sola petición); el cambio de estado reutiliza `PedidoRepository.actualizarEstado`.
 
@@ -73,10 +73,11 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - "Para llevar" admite la casilla **Sin mesa** (marcada por defecto): no asocia mesa.
 - **Una sola pantalla de comanda** (`/pedido/nuevo` y `/pedido/:folio/editar`) para crear, editar y para que
   el cliente pida en línea (el cliente no elige mesa ni tipo: siempre es para llevar).
-- **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros ni Mesa/Tipo. La única acción es **Editar**, visible solo en pedidos `pendiente` (RN-03); abre la misma comanda (siempre para llevar), donde también puede cancelar con motivo. Cuando el pedido pasa a preparación el botón desaparece y la base lo rechaza ("pide ayuda al mesero"). La política `pedido_select` ya solo le devuelve los suyos y `actualizar_pedido`/`pedido_antes_update` ya exigían estas reglas; no hizo falta migración.
+- **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros ni Mesa/Tipo. Las acciones son **Editar** y **Cancelar**, visibles solo en pedidos `pendiente` (RN-03). Editar abre la misma comanda (siempre para llevar); Cancelar pide el motivo en un cuadro y cancela al instante (también se puede cancelar desde la comanda). Cuando el pedido pasa a preparación el botón desaparece y la base lo rechaza ("pide ayuda al mesero"). La política `pedido_select` ya solo le devuelve los suyos y `actualizar_pedido`/`pedido_antes_update` ya exigían estas reglas; no hizo falta migración.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
   Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
+  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado). La pantalla del mesero para ingresar el PIN de gerente (`autorizar_con_pin`) **aún no está construida**.
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
@@ -88,7 +89,8 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear (cliente) y modificar (cliente y gerente). Diseño provisional sin Figma.
 
 ## Contrato con la app (Flutter)
-- Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`
+- Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`. **Solo mesero y cliente** crean pedidos; el gerente supervisa (migración `20261112120000_pedidos_gerente_no_crea.sql`) y el chef no.
+- En la Comandería, los pedidos en línea muestran bajo el folio el **nombre del cliente** (si el rol puede leerlo: mesero y gerente; el chef ve "En línea" por RLS de `cliente_select`) y el buscador también lo encuentra.
   con `p_items = [{id_platillo, cantidad, notas_especiales}]`. No se inserta directo en `pedido`.
 - Cambiar estado / cancelar: `update` sobre `pedido` (cancelar exige `motivo_cancelacion`).
 - Los errores de reglas llegan como `PostgrestException` con mensaje en español listo para mostrar.

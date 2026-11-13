@@ -60,6 +60,7 @@ class _Contenido extends StatelessWidget {
     final iva = desgloseIva(detalle.total);
     final tipo = detalle.tipo == TipoPedido.enMesa ? 'Presencial' : 'Para Llevar';
     final mesero = detalle.nombreMesero ?? (detalle.esEnLinea ? 'En línea' : '—');
+    final cliente = detalle.nombreCliente;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +121,10 @@ class _Contenido extends StatelessWidget {
               _Dato('Folio', detalle.folioEtiqueta),
               _Dato('Mesa', detalle.mesaEtiqueta ?? '—'),
               _Dato('Tipo de pedido', tipo),
-              _Dato('Mesero asignado', mesero),
+              if (detalle.esEnLinea && cliente != null)
+                _Dato('Cliente', cliente)
+              else
+                _Dato('Mesero asignado', mesero),
               _Dato('Estado', null, hijo: EstadoChip(detalle.estado)),
             ],
           ),

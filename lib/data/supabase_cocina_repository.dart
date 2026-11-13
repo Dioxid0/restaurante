@@ -35,8 +35,10 @@ class SupabaseCocinaRepository implements CocinaRepository {
     try {
       final filas = await _client
           .from('notificacion_cocina')
-          .select('id_notificacion, hora_emision, mensaje, tipo_evento, folio')
+          // `pedido!inner` + filtro: solo avisos de pedidos de hoy (los de días anteriores no se arrastran).
+          .select('id_notificacion, hora_emision, mensaje, tipo_evento, folio, pedido!inner(fecha_operativa)')
           .eq('atendida', false)
+          .eq('pedido.fecha_operativa', _hoy())
           .order('hora_emision', ascending: false)
           .limit(30);
       return filas

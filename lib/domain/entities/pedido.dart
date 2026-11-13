@@ -48,7 +48,14 @@ abstract class PedidoResumen with _$PedidoResumen {
     required bool esEnLinea,
     int? numeroMesa,
     String? nombreMesero,
+
+    /// Cliente que hizo un pedido en línea (null si lo tomó un mesero o si el rol no puede verlo).
+    String? nombreCliente,
   }) = _PedidoResumen;
+
+  /// Quién tomó el pedido: el mesero, o el cliente si es en línea ("En línea" si no se conoce).
+  String? get responsableEtiqueta =>
+      nombreMesero ?? nombreCliente ?? (esEnLinea ? 'En línea' : null);
 
   /// Folio visible para mesero y chef: #PED-108
   String get folioEtiqueta => '#PED-${folioDia.toString().padLeft(3, '0')}';

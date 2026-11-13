@@ -201,7 +201,9 @@ PedidoResumen pedidoDePrueba({
   EstadoPedido estado = EstadoPedido.pendiente,
   TipoPedido tipo = TipoPedido.enMesa,
   int? mesa = 1,
-  String mesero = 'Juan Pérez',
+  String? mesero = 'Juan Pérez',
+  String? cliente,
+  bool enLinea = false,
   double total = 100,
 }) =>
     PedidoResumen(
@@ -211,7 +213,8 @@ PedidoResumen pedidoDePrueba({
       tipo: tipo,
       estado: estado,
       total: total,
-      esEnLinea: false,
+      esEnLinea: enLinea,
       numeroMesa: tipo == TipoPedido.enMesa ? mesa : null,
       nombreMesero: mesero,
+      nombreCliente: cliente,
     );

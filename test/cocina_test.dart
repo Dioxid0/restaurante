@@ -165,4 +165,39 @@ void main() {
     expect(find.text('#PED-002'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('el chef recibe el aviso flotante aunque esté en Inicio (no solo en Cocina)',
+      (tester) async {
+    final cocina = FakeCocinaRepository(avisos: [avisoDePrueba(id: 1, mensaje: 'Pedido #1 nuevo')]);
+    await abrirApp(
+      tester,
+      auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.chef)),
+      pedidos: FakePedidoRepository([]),
+      cocina: cocina,
+      ventana: const Size(1400, 1000),
+    );
+    expect(find.text('Comandería y Mesas'), findsOneWidget); // sigue en Inicio
+    expect(find.text('Pedido #2 nuevo'), findsNothing);
+
+    cocina.avisos_ = [avisoDePrueba(id: 2, folioDia: 2, mensaje: 'Pedido #2 nuevo'), ...cocina.avisos_];
+    cocina.emitirCambio();
+    await tester.pumpAndSettle();
+    expect(find.text('Pedido #2 nuevo'), findsOneWidget); // solo el aviso flotante
+    await tester.pump(const Duration(seconds: 6));
+  });
+
+  testWidgets('el mesero y el gerente no reciben avisos flotantes de cocina', (tester) async {
+    final cocina = FakeCocinaRepository(avisos: []);
+    await abrirApp(
+      tester,
+      auth: FakeAuthRepository(sesion: perfilDe(RolUsuario.gerente)),
+      pedidos: FakePedidoRepository([]),
+      cocina: cocina,
+      ventana: const Size(1400, 1000),
+    );
+    cocina.avisos_ = [avisoDePrueba(id: 2, folioDia: 2, mensaje: 'Pedido #2 nuevo')];
+    cocina.emitirCambio();
+    await tester.pumpAndSettle();
+    expect(find.text('Pedido #2 nuevo'), findsNothing);
+  });
 }

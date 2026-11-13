@@ -16,7 +16,7 @@ void _ignorarPedido(PedidoResumen pedido) {}
 ///  * Pantallas angostas (< 700 px): una tarjeta por pedido.
 ///
 /// Con [PedidosTabla.seguimiento] (el cliente) se muestra Folio, Hora, Estado, Total y una
-/// sola acción: "Editar", solo en los pedidos pendientes (RN-03). Sin Mesa/Tipo ni mesero.
+/// acciones: "Editar" y "Cancelar", solo en los pedidos pendientes (RN-03). Sin Mesa/Tipo ni mesero.
 class PedidosTabla extends StatelessWidget {
   const PedidosTabla({
     super.key,
@@ -26,7 +26,9 @@ class PedidosTabla extends StatelessWidget {
     required this.alEditar,
     required this.alVer,
     this.puedeOperar = true,
-  }) : soloSeguimiento = false;
+    this.esGerente = false,
+  })  : soloSeguimiento = false,
+        alCancelar = null;
 
   /// Vista del cliente: solo seguimiento (sin Mesa/Tipo, mesero ni acciones).
   const PedidosTabla.seguimiento({
@@ -34,8 +36,10 @@ class PedidosTabla extends StatelessWidget {
     required this.pedidos,
     required this.ahora,
     required this.alEditar,
+    required this.alCancelar,
   })  : soloSeguimiento = true,
         puedeOperar = false,
+        esGerente = false,
         alCambiarEstado = _ignorarEstado,
         alVer = _ignorarPedido;
 
@@ -45,9 +49,15 @@ class PedidosTabla extends StatelessWidget {
 
   /// Mesero y gerente operan pedidos (editar, entregar, completar); el chef solo los consulta.
   final bool puedeOperar;
+
+  /// El gerente puede editar/cancelar también pedidos en preparación o listos (RN-03).
+  final bool esGerente;
   final AlCambiarEstado alCambiarEstado;
   final ValueChanged<PedidoResumen> alEditar;
   final ValueChanged<PedidoResumen> alVer;
+
+  /// Solo en la vista del cliente: cancelar su pedido (únicamente si está pendiente).
+  final ValueChanged<PedidoResumen>? alCancelar;
 
   /// Debajo de este ancho se usan tarjetas en vez de tabla.
   static const anchoTarjetas = 700.0;
@@ -59,7 +69,7 @@ class PedidosTabla extends StatelessWidget {
   static const _flex = [16, 12, 15, 18, 12, 27];
 
   // Vista del cliente: folio, hora, estado, total, acciones (solo "Editar").
-  static const _flexSeguimiento = [18, 18, 26, 16, 22];
+  static const _flexSeguimiento = [14, 12, 22, 14, 38];
 
   List<int> get _anchos => soloSeguimiento ? _flexSeguimiento : _flex;
 
@@ -194,7 +204,7 @@ class PedidosTabla extends StatelessWidget {
                     children: [
                       Expanded(
                         child: Text(
-                          p.nombreMesero ?? (p.esEnLinea ? 'En línea' : ''),
+                          p.responsableEtiqueta ?? '',
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: AppColors.textFaint, fontSize: 11.5),
                         ),
@@ -236,7 +246,23 @@ class PedidosTabla extends StatelessWidget {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
             ),
           ),
-          if (!soloSeguimiento) const SizedBox(width: 6),
+          const SizedBox(width: 6),
+        ],
+        if (soloSeguimiento && alCancelar != null && p.estado == EstadoPedido.pendiente) ...[
+          OutlinedButton.icon(
+            onPressed: () => alCancelar!(p),
+            icon: const Icon(Icons.close, size: 15),
+            label: const Text('Cancelar'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.danger,
+              backgroundColor: const Color(0xFFFEF2F2),
+              side: const BorderSide(color: Color(0xFFFECACA)),
+              minimumSize: const Size(0, 34),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+            ),
+          ),
         ],
         if (puedeOperar && p.estado == EstadoPedido.listo) ...[
           BotonConfirmable(
@@ -274,10 +300,16 @@ class PedidosTabla extends StatelessWidget {
     );
   }
 
-  /// "Editar": mesero/gerente en pedidos pendientes; el cliente también, y solo en los
-  /// suyos pendientes (RN-03). La base de datos es la que lo exige de verdad.
-  bool _puedeEditar(PedidoResumen p) =>
-      (puedeOperar || soloSeguimiento) && p.estado == EstadoPedido.pendiente;
+  /// "Editar": mesero y cliente solo en pedidos pendientes (el cliente, solo en los suyos);
+  /// el gerente también en preparación o listos, y ahí puede cancelar (RN-03).
+  /// La base de datos es la que lo exige de verdad.
+  bool _puedeEditar(PedidoResumen p) {
+    if (p.estado == EstadoPedido.pendiente) return puedeOperar || soloSeguimiento;
+    if (esGerente) {
+      return p.estado == EstadoPedido.enPreparacion || p.estado == EstadoPedido.listo;
+    }
+    return false;
+  }
 }
 
 // ------------------------------------------------------------- celdas
@@ -290,7 +322,7 @@ class _Folio extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mesero = mostrarMesero ? (p.nombreMesero ?? (p.esEnLinea ? 'En línea' : null)) : null;
+    final mesero = mostrarMesero ? p.responsableEtiqueta : null;
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.start,

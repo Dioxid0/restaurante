@@ -46,6 +46,7 @@ abstract class PedidoDetalle with _$PedidoDetalle {
     int? idMesa,
     int? numeroMesa,
     String? nombreMesero,
+    String? nombreCliente,
     @Default(false) bool esEnLinea,
     @Default(0.0) double total,
     @Default(0.0) double descuento,

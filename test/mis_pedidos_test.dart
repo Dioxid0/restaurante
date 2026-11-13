@@ -202,4 +202,43 @@ void main() {
     expect(find.text('ACCIONES'), findsOneWidget);
     expect(find.text('Mis pedidos'), findsNothing);
   });
+
+  testWidgets('cliente: "Cancelar" solo aparece en los pedidos pendientes (RN-03)', (tester) async {
+    await _abrirCliente(tester, [
+      pedidoDePrueba(folioDia: 1),
+      pedidoDePrueba(folioDia: 2, estado: EstadoPedido.enPreparacion),
+      pedidoDePrueba(folioDia: 3, estado: EstadoPedido.listo),
+      pedidoDePrueba(folioDia: 4, estado: EstadoPedido.entregado),
+      pedidoDePrueba(folioDia: 5, estado: EstadoPedido.cancelado),
+    ]);
+    expect(find.text('Cancelar'), findsOneWidget);
+  });
+
+  testWidgets('cliente: "Cancelar" pide el motivo y cancela el pedido', (tester) async {
+    final repo = await _abrirCliente(tester, [pedidoDePrueba(folioDia: 7)]);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+
+    // Sin motivo no se puede confirmar.
+    final confirmar = find.widgetWithText(FilledButton, 'Cancelar pedido');
+    expect(tester.widget<FilledButton>(confirmar).onPressed, isNull);
+
+    await tester.enterText(find.byType(TextField).last, 'Me equivoqué de pedido');
+    await tester.pumpAndSettle();
+    await tester.tap(confirmar);
+    await tester.pumpAndSettle();
+
+    expect(repo.cancelados.single, (7, 'Me equivoqué de pedido'));
+    expect(find.text('Pedido cancelado'), findsOneWidget);
+    await _dejarPasarAvisos(tester);
+  });
+
+  testWidgets('cliente: "Volver" en el cuadro de cancelar no cancela nada', (tester) async {
+    final repo = await _abrirCliente(tester, [pedidoDePrueba(folioDia: 7)]);
+    await tester.tap(find.text('Cancelar'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Volver'));
+    await tester.pumpAndSettle();
+    expect(repo.cancelados, isEmpty);
+  });
 }
