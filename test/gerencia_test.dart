@@ -24,6 +24,8 @@ Future<FakeEmpleadoRepository> _abrirGerencia(WidgetTester tester) async {
   );
   await tester.tap(find.text('Gerencia'));
   await tester.pumpAndSettle();
+  await tester.tap(find.text('Cuentas')); // el reporte es la sección por defecto
+  await tester.pumpAndSettle();
   return empleados;
 }
 

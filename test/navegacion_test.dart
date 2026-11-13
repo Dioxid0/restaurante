@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.text('Gerencia'));
     await tester.pumpAndSettle();
-    expect(find.text('Cuentas de personal'), findsOneWidget);
+    expect(find.text('Reporte gerencial'), findsOneWidget);
   });
 
   testWidgets('un mesero que entra a /gerencia a la fuerza no ve la sección', (tester) async {
@@ -60,6 +60,6 @@ void main() {
     GoRouter.of(contexto).go('/gerencia');
     await tester.pumpAndSettle();
     expect(find.text('No tienes acceso a esta sección'), findsOneWidget);
-    expect(find.text('Cuentas de personal'), findsNothing);
+    expect(find.text('Reporte gerencial'), findsNothing);
   });
 }

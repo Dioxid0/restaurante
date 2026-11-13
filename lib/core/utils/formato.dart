@@ -25,3 +25,11 @@ String iniciales(String nombre) {
   final palabras = nombre.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
   return palabras.take(2).map((p) => p[0].toUpperCase()).join();
 }
+
+/// 05/11/2026
+String formatoFecha(DateTime f) =>
+    '${f.day.toString().padLeft(2, '0')}/${f.month.toString().padLeft(2, '0')}/${f.year}';
+
+/// 05/11
+String formatoFechaCorta(DateTime f) =>
+    '${f.day.toString().padLeft(2, '0')}/${f.month.toString().padLeft(2, '0')}';

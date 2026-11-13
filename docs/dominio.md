@@ -108,4 +108,4 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Sin sesión solo se puede leer `platillo` (menú).
 
 ## Pendiente / decisiones abiertas
-- Vistas/funciones del reporte gerencial (CU-07): se definen al ver la pantalla en Figma.
+- **CU-07 Reporte gerencial**: RPC `reporte_gerencial(p_desde, p_hasta)` (solo gerente, rango máximo de un año, devuelve jsonb). "Venta" = pedido no cancelado (cobros/caja fuera de alcance). Incluye: ventas (ya con descuentos) y ventas brutas, pedidos totales/válidos, ticket promedio, pedidos por estado, ventas por tipo y por origen, 5 platillos más vendidos, ventas por día, cancelaciones (cantidad, pérdida y últimas 10 con motivo) y descuentos/cortesías (monto y últimas 10). Periodos de la app: hoy, ayer, últimos 7 y 30 días. Pantalla provisional: Gerencia → Reporte (cuando llegue el diseño de Figma se ajusta solo la UI).

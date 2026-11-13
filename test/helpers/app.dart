@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'fakes_cocina.dart';
 import 'fakes_solicitudes.dart';
+import 'fakes_reporte.dart';
 import 'fakes_reservaciones.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,6 +23,7 @@ Future<void> abrirApp(
   FakeReservacionRepository? reservaciones,
   FakeCocinaRepository? cocina,
   FakeSolicitudRepository? solicitudes,
+  FakeReporteRepository? reporte,
   Size ventana = const Size(1400, 900),
 }) async {
   SharedPreferences.setMockInitialValues({});
@@ -40,6 +42,7 @@ Future<void> abrirApp(
       reservacionRepositoryProvider.overrideWithValue(reservaciones ?? FakeReservacionRepository()),
       cocinaRepositoryProvider.overrideWithValue(cocina ?? FakeCocinaRepository()),
       solicitudRepositoryProvider.overrideWithValue(solicitudes ?? FakeSolicitudRepository()),
+      reporteRepositoryProvider.overrideWithValue(reporte ?? FakeReporteRepository()),
       relojProvider.overrideWith((ref) => Stream.value(DateTime.now())),
     ],
     child: const RestaurantApp(),
