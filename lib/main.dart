@@ -41,8 +41,10 @@ class RestaurantApp extends ConsumerWidget {
       theme: AppTheme.light,
       routerConfig: ref.watch(appRouterProvider),
       // Escala automática en pantallas grandes + zoom del usuario (Ctrl +/−/0).
-      builder: (context, child) => _MarcoDelSistema(
-        child: EscalaInterfaz(child: child ?? const SizedBox.shrink()),
+      // El marco va DENTRO de la escala: EscalaInterfaz fija el alto de la pantalla y un
+      // SafeArea por fuera lo dejaría más alto que la ventana (se cortaba la parte de abajo).
+      builder: (context, child) => EscalaInterfaz(
+        child: _MarcoDelSistema(child: child ?? const SizedBox.shrink()),
       ),
     );
   }
