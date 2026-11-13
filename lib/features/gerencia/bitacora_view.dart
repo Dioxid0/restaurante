@@ -48,6 +48,7 @@ class BitacoraView extends ConsumerWidget {
         ],
       ),
       hijo: PanelBlanco(
+        anchoMinimo: 860,
         hijo: datos.when(
           loading: () => const CargandoOError(),
           error: (e, _) => CargandoOError(

@@ -82,6 +82,7 @@ class MenuAdminView extends ConsumerWidget {
       descripcion: 'Agrega platillos, cambia precios y marca lo que se agotó.',
       accion: BotonAccion(etiqueta: 'Nuevo platillo', icono: Icons.add, alPresionar: nuevo),
       hijo: PanelBlanco(
+        anchoMinimo: 780,
         hijo: menu.when(
           loading: () => const CargandoOError(),
           error: (e, _) => CargandoOError(
@@ -117,8 +118,8 @@ class MenuAdminView extends ConsumerWidget {
                       value: p.disponible,
                       onChanged: (v) => cambiarDisponible(p, v),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         TextButton(onPressed: () => editar(p), child: const Text('Editar')),
                         TextButton(

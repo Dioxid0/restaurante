@@ -8,6 +8,7 @@ import '../auth/auth_providers.dart';
 import 'gerencia_providers.dart';
 import 'widgets/editar_cuenta_dialog.dart';
 import 'widgets/nueva_cuenta_dialog.dart';
+import 'widgets/vista_comun.dart';
 
 /// Gerencia → Cuentas: administración de cuentas de personal.
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
@@ -31,114 +32,70 @@ class CuentasView extends ConsumerWidget {
       }
     }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 26, 28, 28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1500),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+    // Mismo marco que Menú, Mesas y Bitácora: en teléfono el botón baja y la tabla se desplaza.
+    return SeccionGerencia(
+      kicker: 'GERENCIA / CUENTAS',
+      titulo: 'Cuentas de personal',
+      descripcion:
+          'Crea y administra las cuentas de meseros, chefs y gerentes.',
+      accion: BotonAccion(
+        etiqueta: 'Nueva cuenta',
+        icono: Icons.person_add_alt,
+        alPresionar: nueva,
+      ),
+      hijo: PanelBlanco(
+        anchoMinimo: 760,
+        hijo: cuentas.when(
+          loading: () => const Padding(
+            padding: EdgeInsets.all(60),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (e, _) => Padding(
+            padding: const EdgeInsets.all(48),
+            child: Center(
+              child: Column(
                 children: [
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'GERENCIA / CUENTAS',
-                          style: TextStyle(
-                            color: AppColors.amber,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        SizedBox(height: 6),
-                        Text(
-                          'Cuentas de personal',
-                          style: TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Crea y administra las cuentas de meseros, chefs y gerentes.',
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.icon(
-                    onPressed: nueva,
-                    icon: const Icon(Icons.person_add_alt, size: 20),
-                    label: const Text('Nueva cuenta'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.amber,
-                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                      textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-                    ),
+                  const Text('No se pudieron cargar las cuentas'),
+                  const SizedBox(height: 12),
+                  FilledButton(
+                    onPressed: () => ref.invalidate(cuentasPersonalProvider),
+                    child: const Text('Reintentar'),
                   ),
                 ],
               ),
-              const SizedBox(height: 22),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: AppColors.border),
+            ),
+          ),
+          data: (lista) => _Tabla(
+            cuentas: lista,
+            idPropio: yo?.id,
+            alEditar: (c) async {
+              final ok = await showDialog<bool>(
+                context: context,
+                builder: (_) => EditarCuentaDialog(
+                  cuenta: c,
+                  esPropia: c.idEmpleado == yo?.id,
                 ),
-                clipBehavior: Clip.antiAlias,
-                child: cuentas.when(
-                  loading: () => const Padding(
-                    padding: EdgeInsets.all(60),
-                    child: Center(child: CircularProgressIndicator()),
-                  ),
-                  error: (e, _) => Padding(
-                    padding: const EdgeInsets.all(48),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          const Text('No se pudieron cargar las cuentas'),
-                          const SizedBox(height: 12),
-                          FilledButton(
-                            onPressed: () => ref.invalidate(cuentasPersonalProvider),
-                            child: const Text('Reintentar'),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  data: (lista) => _Tabla(
-                    cuentas: lista,
-                    idPropio: yo?.id,
-                    alEditar: (c) async {
-                      final ok = await showDialog<bool>(
-                        context: context,
-                        builder: (_) => EditarCuentaDialog(cuenta: c, esPropia: c.idEmpleado == yo?.id),
-                      );
-                      if (ok == true && context.mounted) {
-                        ScaffoldMessenger.of(context)
-                          ..hideCurrentSnackBar()
-                          ..showSnackBar(const SnackBar(content: Text('Cuenta actualizada')));
-                      }
-                    },
-                    alCambiarActivo: (c, activo) async {
-                      try {
-                        await ref
-                            .read(cuentasPersonalProvider.notifier)
-                            .cambiarActivo(c.idEmpleado, activo: activo);
-                      } catch (e) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
-                        }
-                      }
-                    },
-                  ),
-                ),
-              ),
-            ],
+              );
+              if (ok == true && context.mounted) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(content: Text('Cuenta actualizada')),
+                  );
+              }
+            },
+            alCambiarActivo: (c, activo) async {
+              try {
+                await ref
+                    .read(cuentasPersonalProvider.notifier)
+                    .cambiarActivo(c.idEmpleado, activo: activo);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(mensajeDeError(e))));
+                }
+              }
+            },
           ),
         ),
       ),
@@ -161,55 +118,88 @@ class _Tabla extends StatelessWidget {
 
   static const _flex = [22, 18, 12, 12, 12, 24];
 
-  Widget _fila(List<Widget> celdas, {Color fondo = Colors.white, double alto = 52}) => Container(
-        height: alto,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: fondo,
-          border: const Border(top: BorderSide(color: AppColors.borderSoft)),
-        ),
-        child: Row(
-          children: [
-            for (var i = 0; i < celdas.length; i++)
-              Expanded(
-                flex: _flex[i],
-                child: Align(alignment: Alignment.centerLeft, child: celdas[i]),
-              ),
-          ],
-        ),
-      );
+  Widget _fila(
+    List<Widget> celdas, {
+    Color fondo = Colors.white,
+    double alto = 52,
+  }) => Container(
+    height: alto,
+    padding: const EdgeInsets.symmetric(horizontal: 20),
+    decoration: BoxDecoration(
+      color: fondo,
+      border: const Border(top: BorderSide(color: AppColors.borderSoft)),
+    ),
+    child: Row(
+      children: [
+        for (var i = 0; i < celdas.length; i++)
+          Expanded(
+            flex: _flex[i],
+            child: Align(alignment: Alignment.centerLeft, child: celdas[i]),
+          ),
+      ],
+    ),
+  );
 
   Widget _th(String t) => Text(
-        t,
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 10.5,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.8,
-        ),
-      );
+    t,
+    style: const TextStyle(
+      color: AppColors.textMuted,
+      fontSize: 10.5,
+      fontWeight: FontWeight.w800,
+      letterSpacing: 0.8,
+    ),
+  );
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        _fila([_th('NOMBRE'), _th('USUARIO'), _th('ROL'), _th('TURNO'), _th('ESTADO'), _th('ACCIONES')],
-            fondo: const Color(0xFFF8FAFC), alto: 40),
+        _fila(
+          [
+            _th('NOMBRE'),
+            _th('USUARIO'),
+            _th('ROL'),
+            _th('TURNO'),
+            _th('ESTADO'),
+            _th('ACCIONES'),
+          ],
+          fondo: const Color(0xFFF8FAFC),
+          alto: 40,
+        ),
         for (final c in cuentas)
           _fila([
-            Text(c.nombre, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
-            Text(c.usuario, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            Text(
+              c.nombre,
+              style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+            ),
+            Text(
+              c.usuario,
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
             Text(c.rol.etiqueta, style: const TextStyle(fontSize: 13)),
-            Text(c.turno ?? '—', style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+            Text(
+              c.turno ?? '—',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+            ),
             _EstadoCuenta(activo: c.activo),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+            Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
-                TextButton(onPressed: () => alEditar(c), child: const Text('Editar')),
+                TextButton(
+                  onPressed: () => alEditar(c),
+                  child: const Text('Editar'),
+                ),
                 if (c.idEmpleado == idPropio)
                   const Padding(
                     padding: EdgeInsets.symmetric(horizontal: 8),
-                    child: Text('(tú)', style: TextStyle(color: AppColors.textFaint, fontSize: 12)),
+                    child: Text(
+                      '(tú)',
+                      style: TextStyle(
+                        color: AppColors.textFaint,
+                        fontSize: 12,
+                      ),
+                    ),
                   )
                 else
                   TextButton(
@@ -239,7 +229,11 @@ class _EstadoCuenta extends StatelessWidget {
       ),
       child: Text(
         activo ? 'Activa' : 'Inactiva',
-        style: TextStyle(color: color, fontSize: 11.5, fontWeight: FontWeight.w700),
+        style: TextStyle(
+          color: color,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
   }

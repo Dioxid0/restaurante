@@ -19,49 +19,58 @@ class SeccionGerencia extends StatelessWidget {
   final Widget hijo;
   final Widget? accion;
 
+  /// Debajo de este ancho (teléfono) el botón pasa debajo del título y se reducen los márgenes.
+  static const anchoAngosto = 620.0;
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 18, 28, 28),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1500),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          kicker,
-                          style: const TextStyle(
-                            color: AppColors.amber,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(titulo, style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        Text(descripcion, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
-                      ],
-                    ),
+    return LayoutBuilder(builder: (context, c) {
+      final angosto = c.maxWidth < anchoAngosto;
+      final textos = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            kicker,
+            style: const TextStyle(
+              color: AppColors.amber,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(titulo, style: TextStyle(fontSize: angosto ? 24 : 30, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text(descripcion, style: const TextStyle(color: AppColors.textMuted, fontSize: 13)),
+        ],
+      );
+      return SingleChildScrollView(
+        padding: EdgeInsets.fromLTRB(angosto ? 16 : 28, 18, angosto ? 16 : 28, 28),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1500),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (angosto) ...[
+                  textos,
+                  if (accion != null) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(width: double.infinity, child: accion),
+                  ],
+                ] else
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [Expanded(child: textos), ?accion],
                   ),
-                  ?accion,
-                ],
-              ),
-              const SizedBox(height: 22),
-              hijo,
-            ],
+                const SizedBox(height: 22),
+                hijo,
+              ],
+            ),
           ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 
@@ -89,12 +98,16 @@ class BotonAccion extends StatelessWidget {
 }
 
 /// Contenedor blanco con borde para tablas y listas.
+/// Si [anchoMinimo] está definido y la pantalla es más angosta (teléfono), la tabla conserva ese
+/// ancho y se desplaza de lado, en vez de apretar las columnas hasta partir el texto.
 class PanelBlanco extends StatelessWidget {
-  const PanelBlanco({super.key, required this.hijo});
+  const PanelBlanco({super.key, required this.hijo, this.anchoMinimo});
   final Widget hijo;
+  final double? anchoMinimo;
 
   @override
   Widget build(BuildContext context) {
+    final minimo = anchoMinimo;
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -103,7 +116,16 @@ class PanelBlanco extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       clipBehavior: Clip.antiAlias,
-      child: hijo,
+      child: minimo == null
+          ? hijo
+          : LayoutBuilder(
+              builder: (context, c) => c.maxWidth >= minimo
+                  ? hijo
+                  : SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: SizedBox(width: minimo, child: hijo),
+                    ),
+            ),
     );
   }
 }
