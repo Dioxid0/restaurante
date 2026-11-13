@@ -1,8 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Sin este permiso, la app compilada en modo release no se conecta a Supabase
+         (solo los manifiestos debug/profile lo traen por defecto). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="restaurant_app"
+        android:label="El Buen Sabor"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"
