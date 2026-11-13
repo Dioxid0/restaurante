@@ -14,7 +14,7 @@ Una sola sucursal. Diagramas: [modelo-er.webp](modelo-er.webp) y [casos-de-uso.w
 | cliente | Se registra, reserva (CU-10/12/13/14; es el único que reserva y confirma), pide en línea para llevar (CU-11), consulta su pedido (CU-08) |
 | mesero | Registra pedidos en mesa o para llevar (CU-01/02), modifica/cancela (CU-04/05), consulta (CU-08), consulta reservaciones (solo lectura) |
 | chef | Ve comandas (CU-03), actualiza estado (CU-15) |
-| gerente | Todo lo anterior + reporte (CU-07), descuentos/cortesías (CU-09), PIN de autorización |
+| gerente | Todo lo anterior salvo tomar pedidos + reporte (CU-07), descuentos/cortesías (CU-09), aprueba o rechaza las solicitudes de cambio del mesero (RN-03) |
 
 Todos usan el mismo login. El personal entra con `usuario` + contraseña (Supabase Auth; internamente
 `usuario normalizado@restaurante.local`, p. ej. "Juan Pérez" → `juan.perez@restaurante.local`); los clientes, con su correo.
@@ -48,11 +48,19 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 
 ## Reglas de negocio implementadas en la base de datos
 - **RN-03**: pedido que ya no está `pendiente` no se modifica ni cancela libremente.
-  El cliente pierde la opción; el mesero debe llamar `autorizar_con_pin(folio, pin)` (PIN de un gerente,
-  válido 10 min). Toda cancelación crea un registro en `merma_cancelacion` y avisa a cocina.
+  El cliente pierde la opción. **Corrección acordada por el equipo:** el diagrama original pedía el PIN del gerente
+  para el mesero, pero un PIN compartido se puede aprender o prestar. Ahora el mesero **solicita** el cambio
+  (`solicitar_cambio(folio, tipo, motivo)`: modificar o cancelar, con motivo) y el **gerente aprueba o rechaza**
+  desde su propia sesión (`resolver_solicitud(id, aprobar)`). Al aprobar se abre una ventana de **10 minutos** sobre ese
+  pedido (`pedido.autorizado_por` / `autorizacion_hasta`, que ya validaban los triggers y `actualizar_pedido`).
+  Solo se solicita sobre pedidos que ya no están pendientes ni cerrados; una sola solicitud pendiente por pedido; sin PIN.
+  Tabla `solicitud_cambio` (RLS: solo lectura para mesero y gerente; se escribe únicamente con las RPC) y auditada (RNF-04).
+  Toda cancelación crea un registro en `merma_cancelacion` (con el gerente que autorizó) y avisa a cocina.
 - **RN-07**: el cliente solo cancela/modifica una reservación con ≥ 5 horas de anticipación (el gerente no tiene esa restricción; el mesero no modifica ni cancela).
 - **RNF-04**: `bitacora_auditoria` registra quién (user, rol, empleado) insertó/modificó pedidos, detalles, reservaciones, platillos y mesas.
 - **CU-09**: `aplicar_descuento(folio, monto, es_cortesia, motivo)`, solo gerente, sobre el pedido completo. Solo sirve como registro para el reporte.
+  Funciona en cualquier pedido que no esté cancelado; el motivo es obligatorio; el descuento no puede pasar del total (la base lo recorta) y la cortesía deja el total en 0 (el descuento guarda el importe completo). Un monto de 0 sin cortesía retira el descuento. Aplicar otro reemplaza al anterior. `total = suma de renglones − descuento` (0 si es cortesía), así que el total de la Comandería ya lo refleja.
+  **App:** en "Ver detalle" de un pedido, el gerente ve "Aplicar descuento o cortesía" (o "Cambiar…" si ya hay uno): cuadro con **Porcentaje** (por defecto, con atajos de 10/15/20/25/50 %), **Monto** o **Cortesía**, más el motivo, y "Quitar descuento" si existe. El porcentaje se convierte a importe en la app (redondeado a centavos) y muestra una vista previa con el total final; la base solo recibe el importe, así que no hizo falta cambiarla. El desglose muestra Subtotal e IVA del pedido completo, luego el descuento o la cortesía con su motivo y el total. Nadie más ve el botón (y la base lo rechaza). Código: `features/pedidos/detalle/dialogo_descuento.dart`, `PedidoRepository.aplicarDescuento`. No hizo falta migración.
 - Precio congelado en `detalle_pedido.precio_unitario`; `total` se recalcula con triggers.
 - Cocina recibe `notificacion_cocina` (`nuevo`, `modificado`, `cancelado`); la app se suscribe por Realtime.
 
@@ -76,8 +84,9 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros ni Mesa/Tipo. Las acciones son **Editar** y **Cancelar**, visibles solo en pedidos `pendiente` (RN-03). Editar abre la misma comanda (siempre para llevar); Cancelar pide el motivo en un cuadro y cancela al instante (también se puede cancelar desde la comanda). Cuando el pedido pasa a preparación el botón desaparece y la base lo rechaza ("pide ayuda al mesero"). La política `pedido_select` ya solo le devuelve los suyos y `actualizar_pedido`/`pedido_antes_update` ya exigían estas reglas; no hizo falta migración.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
-  Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
-  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado). La pantalla del mesero para ingresar el PIN de gerente (`autorizar_con_pin`) **aún no está construida**.
+  Mismas reglas que RN-03: mesero solo si está `pendiente` (o con una solicitud aprobada y vigente), cliente solo el suyo y `pendiente`.
+  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado).
+- **Solicitudes de cambio (RN-03, app):** el mesero ve "Solicitar cambio" en los pedidos en preparación o listos; elige Modificar o Cancelar, escribe el motivo y la fila queda en "Solicitud enviada". El gerente ve arriba de la Comandería el panel "Solicitudes de cambio pendientes" (mesero, pedido, tipo, motivo) con **Aprobar** / **Rechazar**, y un aviso flotante cuando llega una nueva. Al aprobar, el mesero recibe un aviso, ve "Editar" en ese pedido y tiene 10 minutos para editarlo o cancelarlo; si vence, debe solicitar de nuevo. Un rechazo avisa al mesero y permite volver a solicitar. Código en `features/solicitudes`, repositorio `SolicitudRepository`, migración `20261112200000_solicitudes_de_cambio.sql` (que también quita `autorizar_con_pin` y `establecer_pin`; la tabla `gerente_pin` queda sin uso).
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
@@ -88,15 +97,21 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - Las reglas viven en `reservacion_validar()` y en las políticas `reservacion_insert`/`reservacion_update` (migraciones `20261110200000_reservaciones_roles_y_confirmacion.sql` y `20261110220000_reservaciones_solo_cliente_y_gerente.sql`).
 - **Pantalla** (`features/reservaciones`): lista con filtro, tiempo real y un formulario único para crear (cliente) y modificar (cliente y gerente). Diseño provisional sin Figma.
 
+## Administración del gerente (Entrega C)
+- **Personal:** el gerente edita nombre, turno y rol con la RPC `editar_empleado` y activa/desactiva con `update` solo de la columna `activo` (la base ya no deja cambiar `usuario`, `user_id` ni `rol` por UPDATE directo). El trigger `empleado_proteger` impide desactivarte o cambiarte tu propio rol y dejar el sistema sin gerente activo.
+- **Menú y mesas:** CRUD solo del gerente (RLS ya existente). `platillo.nombre` no vacío y único (sin importar mayúsculas), `mesa.numero_mesa > 0`. Un platillo o mesa con pedidos no se borra (FK): el platillo se marca "no disponible". El estado de la mesa lo calcula la base; la app no lo edita.
+- **Bitácora (RNF-04):** RPC `bitacora_gerencial(p_tabla, p_limite)` (solo gerente, máx. 200) con quién, cuándo y los campos que cambiaron. Secciones: pedidos, renglones, reservaciones, solicitudes, menú, mesas y cuentas.
+- Migración: `20261113100000_gerencia_administracion.sql`.
+
 ## Contrato con la app (Flutter)
 - Crear pedido: `supabase.rpc('crear_pedido', params: {p_tipo_pedido, p_id_mesa, p_items})`. **Solo mesero y cliente** crean pedidos; el gerente supervisa (migración `20261112120000_pedidos_gerente_no_crea.sql`) y el chef no.
 - En la Comandería, los pedidos en línea muestran bajo el folio el **nombre del cliente** (si el rol puede leerlo: mesero y gerente; el chef ve "En línea" por RLS de `cliente_select`) y el buscador también lo encuentra.
   con `p_items = [{id_platillo, cantidad, notas_especiales}]`. No se inserta directo en `pedido`.
 - Cambiar estado / cancelar: `update` sobre `pedido` (cancelar exige `motivo_cancelacion`).
 - Los errores de reglas llegan como `PostgrestException` con mensaje en español listo para mostrar.
-- `empleado` se lee con `select()` normal; el PIN está en otra tabla inaccesible.
+- `empleado` se lee con `select()` normal.
+- Solicitudes de cambio: `rpc('solicitar_cambio', {p_folio, p_tipo, p_motivo})` (mesero) y `rpc('resolver_solicitud', {p_id, p_aprobar})` (gerente).
 - Sin sesión solo se puede leer `platillo` (menú).
 
 ## Pendiente / decisiones abiertas
-- Vistas/funciones del reporte gerencial (CU-07): se definen al ver la pantalla en Figma.
-- Intentos fallidos de PIN no tienen límite (aceptable para el alcance escolar).
+- **CU-07 Reporte gerencial**: RPC `reporte_gerencial(p_desde, p_hasta)` (solo gerente, rango máximo de un año, devuelve jsonb). "Venta" = pedido no cancelado (cobros/caja fuera de alcance). Incluye: ventas (ya con descuentos) y ventas brutas, pedidos totales/válidos, ticket promedio, pedidos por estado, ventas por tipo y por origen, 5 platillos más vendidos, ventas por día, cancelaciones (cantidad, pérdida y últimas 10 con motivo) y descuentos/cortesías (monto y últimas 10). Periodos de la app: hoy, ayer, últimos 7 y 30 días. Pantalla provisional: Gerencia → Reporte (cuando llegue el diseño de Figma se ajusta solo la UI).

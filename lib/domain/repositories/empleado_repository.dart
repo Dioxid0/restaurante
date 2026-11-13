@@ -16,4 +16,8 @@ abstract interface class EmpleadoRepository {
   });
 
   Future<void> cambiarActivo(int idEmpleado, {required bool activo});
+
+  /// Cambia nombre, turno y rol (RPC `editar_empleado`, solo gerente).
+  /// La base impide cambiarte tu propio rol o dejar el sistema sin gerente.
+  Future<void> editar(int idEmpleado, {required String nombre, String? turno, required RolUsuario rol});
 }

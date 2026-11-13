@@ -13,6 +13,12 @@ import '../domain/repositories/reservacion_repository.dart';
 import 'supabase_reservacion_repository.dart';
 import '../domain/repositories/cocina_repository.dart';
 import 'supabase_cocina_repository.dart';
+import '../domain/repositories/solicitud_repository.dart';
+import 'supabase_solicitud_repository.dart';
+import '../domain/repositories/reporte_repository.dart';
+import 'supabase_reporte_repository.dart';
+import '../domain/repositories/bitacora_repository.dart';
+import 'supabase_bitacora_repository.dart';
 
 part 'repository_providers.g.dart';
 
@@ -42,3 +48,12 @@ ReservacionRepository reservacionRepository(Ref ref) => SupabaseReservacionRepos
 
 @Riverpod(keepAlive: true)
 CocinaRepository cocinaRepository(Ref ref) => SupabaseCocinaRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+SolicitudRepository solicitudRepository(Ref ref) => SupabaseSolicitudRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+ReporteRepository reporteRepository(Ref ref) => SupabaseReporteRepository(Supabase.instance.client);
+
+@Riverpod(keepAlive: true)
+BitacoraRepository bitacoraRepository(Ref ref) => SupabaseBitacoraRepository(Supabase.instance.client);

@@ -59,4 +59,18 @@ class SupabaseEmpleadoRepository implements EmpleadoRepository {
       throw ErrorDeNegocio(e.message);
     }
   }
+
+  @override
+  Future<void> editar(int idEmpleado, {required String nombre, String? turno, required RolUsuario rol}) async {
+    try {
+      await _client.rpc('editar_empleado', params: {
+        'p_id': idEmpleado,
+        'p_nombre': nombre,
+        'p_turno': turno,
+        'p_rol': rol.name,
+      });
+    } on PostgrestException catch (e) {
+      throw ErrorDeNegocio(e.message);
+    }
+  }
 }

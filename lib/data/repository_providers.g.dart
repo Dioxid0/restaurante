@@ -319,3 +319,146 @@ final class CocinaRepositoryProvider
 }
 
 String _$cocinaRepositoryHash() => r'924c7193fc98c946655de1c45dd7556dae7341f1';
+
+@ProviderFor(solicitudRepository)
+final solicitudRepositoryProvider = SolicitudRepositoryProvider._();
+
+final class SolicitudRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SolicitudRepository,
+          SolicitudRepository,
+          SolicitudRepository
+        >
+    with $Provider<SolicitudRepository> {
+  SolicitudRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'solicitudRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$solicitudRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SolicitudRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SolicitudRepository create(Ref ref) {
+    return solicitudRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SolicitudRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SolicitudRepository>(value),
+    );
+  }
+}
+
+String _$solicitudRepositoryHash() =>
+    r'1d77ec579da323af15698bdfdd92032f3957b4cd';
+
+@ProviderFor(reporteRepository)
+final reporteRepositoryProvider = ReporteRepositoryProvider._();
+
+final class ReporteRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ReporteRepository,
+          ReporteRepository,
+          ReporteRepository
+        >
+    with $Provider<ReporteRepository> {
+  ReporteRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'reporteRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$reporteRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ReporteRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ReporteRepository create(Ref ref) {
+    return reporteRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ReporteRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ReporteRepository>(value),
+    );
+  }
+}
+
+String _$reporteRepositoryHash() => r'ad7e4b367426cbd7d23e943b5fe8f5957ba75dab';
+
+@ProviderFor(bitacoraRepository)
+final bitacoraRepositoryProvider = BitacoraRepositoryProvider._();
+
+final class BitacoraRepositoryProvider
+    extends
+        $FunctionalProvider<
+          BitacoraRepository,
+          BitacoraRepository,
+          BitacoraRepository
+        >
+    with $Provider<BitacoraRepository> {
+  BitacoraRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'bitacoraRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$bitacoraRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<BitacoraRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  BitacoraRepository create(Ref ref) {
+    return bitacoraRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(BitacoraRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<BitacoraRepository>(value),
+    );
+  }
+}
+
+String _$bitacoraRepositoryHash() =>
+    r'e344ccd9c58676e609af8a8a77fa883b90ff87f3';

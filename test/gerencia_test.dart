@@ -24,6 +24,8 @@ Future<FakeEmpleadoRepository> _abrirGerencia(WidgetTester tester) async {
   );
   await tester.tap(find.text('Gerencia'));
   await tester.pumpAndSettle();
+  await tester.tap(find.text('Cuentas')); // el reporte es la sección por defecto
+  await tester.pumpAndSettle();
   return empleados;
 }
 
@@ -76,17 +78,15 @@ void main() {
     expect(find.text('Nueva cuenta de personal'), findsOneWidget); // el diálogo sigue abierto
   });
 
-  testWidgets('el rol Gerente permite capturar un PIN; Cliente no es opción', (tester) async {
+  testWidgets('en el rol solo hay personal (Cliente no es opción) y no se pide PIN', (tester) async {
     await _abrirGerencia(tester);
     await tester.tap(find.text('Nueva cuenta'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('PIN de autorización'), findsNothing);
-
     await tester.tap(find.text('Mesero').last);
     await tester.pumpAndSettle();
     expect(find.text('Cliente'), findsNothing);
     await tester.tap(find.text('Gerente').last);
     await tester.pumpAndSettle();
-    expect(find.textContaining('PIN de autorización'), findsOneWidget);
+    expect(find.textContaining('PIN'), findsNothing);
   });
 }

@@ -9,8 +9,11 @@ import '../../../domain/entities/pedido.dart';
 import '../../../domain/entities/pedido_detalle.dart';
 import '../../../domain/entities/perfil.dart';
 import '../../../domain/entities/platillo.dart';
+import '../../../domain/entities/solicitud_cambio.dart';
 import '../../../domain/errors.dart';
 import '../../auth/auth_providers.dart';
+import '../../solicitudes/solicitudes_providers.dart';
+import '../pedidos_providers.dart' show relojProvider;
 import 'comanda_controller.dart';
 import 'comanda_providers.dart';
 import 'comanda_state.dart';
@@ -199,9 +202,19 @@ class _FormularioState extends ConsumerState<_Formulario> {
       );
     }
     final d = _detalle;
-    if (d != null && (!d.estado.esActivo || (d.estado != EstadoPedido.pendiente && widget.perfil.rol != RolUsuario.gerente))) {
+    // Mesero con una solicitud aprobada y vigente (RN-03): puede editar aunque ya esté en cocina.
+    // Es solo comodidad de la pantalla; la base valida la ventana de 10 minutos.
+    final esMesero = widget.perfil.rol == RolUsuario.mesero;
+    final ahora = ref.watch(relojProvider).value ?? DateTime.now();
+    final autorizado = esMesero &&
+        (ref.watch(solicitudesDeHoyProvider).value ?? const <SolicitudCambio>[])
+            .any((s) => s.folio == widget.folio && s.estaVigente(ahora));
+    if (d != null &&
+        (!d.estado.esActivo ||
+            (d.estado != EstadoPedido.pendiente && widget.perfil.rol != RolUsuario.gerente && !autorizado))) {
       return _Bloqueado(
-        mensaje: 'El pedido ${_detalleFolio()} está "${d.estado.etiqueta}" y ya no puede editarse desde aquí.',
+        mensaje: 'El pedido ${_detalleFolio()} está "${d.estado.etiqueta}" y ya no puede editarse desde aquí.'
+            '${esMesero && d.estado.esActivo ? ' Solicita el cambio al gerente desde la Comandería.' : ''}',
         alVolver: _irAlDashboard,
       );
     }

@@ -30,4 +30,13 @@ abstract interface class PedidoRepository {
 
   /// Cancela el pedido (el motivo es obligatorio).
   Future<void> cancelarPedido(int folio, String motivo);
+
+  /// CU-09 (solo gerente): descuento de [monto] sobre el pedido completo, o cortesía (el pedido
+  /// queda en 0). Un monto de 0 sin cortesía retira el descuento. El motivo es obligatorio.
+  Future<void> aplicarDescuento({
+    required int folio,
+    required double monto,
+    required bool esCortesia,
+    required String motivo,
+  });
 }

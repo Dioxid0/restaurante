@@ -96,7 +96,7 @@ class SupabasePedidoRepository implements PedidoRepository {
       final f = await _client
           .from('pedido')
           .select('folio, folio_dia, tipo_pedido, origen, estado, id_mesa, total, descuento, '
-              'es_cortesia, mesa:id_mesa(numero_mesa), '
+              'es_cortesia, motivo_descuento, mesa:id_mesa(numero_mesa), '
               'mesero:empleado!pedido_id_empleado_fkey(nombre), '
               'cliente:id_cliente(nombre), '
               'detalle_pedido(id_detalle, id_platillo, cantidad, precio_unitario, '
@@ -118,6 +118,7 @@ class SupabasePedidoRepository implements PedidoRepository {
         total: (f['total'] as num).toDouble(),
         descuento: (f['descuento'] as num).toDouble(),
         esCortesia: f['es_cortesia'] as bool,
+        motivoDescuento: f['motivo_descuento'] as String?,
         lineas: [
           for (final r in renglones)
             LineaPedido(
@@ -147,6 +148,25 @@ class SupabasePedidoRepository implements PedidoRepository {
         'p_tipo_pedido': tipo.valorBd,
         'p_id_mesa': idMesa,
         'p_items': _itemsAJson(items),
+      });
+    } on PostgrestException catch (e) {
+      throw ErrorDeNegocio(e.message);
+    }
+  }
+
+  @override
+  Future<void> aplicarDescuento({
+    required int folio,
+    required double monto,
+    required bool esCortesia,
+    required String motivo,
+  }) async {
+    try {
+      await _client.rpc('aplicar_descuento', params: {
+        'p_folio': folio,
+        'p_monto': monto,
+        'p_es_cortesia': esCortesia,
+        'p_motivo': motivo,
       });
     } on PostgrestException catch (e) {
       throw ErrorDeNegocio(e.message);

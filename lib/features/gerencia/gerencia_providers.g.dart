@@ -36,7 +36,7 @@ final class CuentasPersonalProvider
   CuentasPersonal create() => CuentasPersonal();
 }
 
-String _$cuentasPersonalHash() => r'6d2fd68a36dc2817d99005059950acac44115b61';
+String _$cuentasPersonalHash() => r'6381c792a7f7fd82ab1090b010a4d362ddbd8677';
 
 /// Cuentas de personal (solo las ve y administra el gerente).
 

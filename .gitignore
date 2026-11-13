@@ -60,3 +60,4 @@ supabase/.branches/
 
 # Node
 node_modules/
+supabase/snippets/

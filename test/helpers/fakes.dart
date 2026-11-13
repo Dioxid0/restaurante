@@ -75,19 +75,98 @@ class FakeAuthRepository implements AuthRepository {
 }
 
 class FakeMenuRepository implements MenuRepository {
-  FakeMenuRepository([List<Platillo>? platillos]) : platillos_ = platillos ?? menuDePrueba();
+  FakeMenuRepository([List<Platillo>? platillos]) : platillos_ = List.of(platillos ?? menuDePrueba());
   final List<Platillo> platillos_;
 
+  /// Si no es null, crear/actualizar/eliminar fallan con este mensaje.
+  String? error;
+
+  void _revisar() {
+    if (error != null) throw ErrorDeNegocio(error!);
+  }
+
   @override
-  Future<List<Platillo>> platillos() async => platillos_;
+  Future<List<Platillo>> platillos() async => List.of(platillos_);
+
+  @override
+  Future<void> crear({
+    required String nombre,
+    required double precio,
+    required CategoriaPlatillo categoria,
+    required bool disponible,
+  }) async {
+    _revisar();
+    platillos_.add(Platillo(
+      idPlatillo: 100 + platillos_.length,
+      nombre: nombre,
+      precio: precio,
+      categoria: categoria,
+      disponible: disponible,
+    ));
+  }
+
+  @override
+  Future<void> actualizar(
+    int idPlatillo, {
+    required String nombre,
+    required double precio,
+    required CategoriaPlatillo categoria,
+    required bool disponible,
+  }) async {
+    _revisar();
+    final i = platillos_.indexWhere((p) => p.idPlatillo == idPlatillo);
+    platillos_[i] = platillos_[i].copyWith(
+      nombre: nombre,
+      precio: precio,
+      categoria: categoria,
+      disponible: disponible,
+    );
+  }
+
+  @override
+  Future<void> eliminar(int idPlatillo) async {
+    _revisar();
+    platillos_.removeWhere((p) => p.idPlatillo == idPlatillo);
+  }
 }
 
 class FakeMesaRepository implements MesaRepository {
-  FakeMesaRepository([List<Mesa>? mesas]) : mesas_ = mesas ?? mesasDePrueba();
+  FakeMesaRepository([List<Mesa>? mesas]) : mesas_ = List.of(mesas ?? mesasDePrueba());
   final List<Mesa> mesas_;
 
+  /// Si no es null, crear/actualizar/eliminar fallan con este mensaje.
+  String? error;
+
+  void _revisar() {
+    if (error != null) throw ErrorDeNegocio(error!);
+  }
+
   @override
-  Future<List<Mesa>> mesas() async => mesas_;
+  Future<List<Mesa>> mesas() async => List.of(mesas_);
+
+  @override
+  Future<void> crear({required int numeroMesa, required int capacidad}) async {
+    _revisar();
+    mesas_.add(Mesa(
+      idMesa: 100 + mesas_.length,
+      numeroMesa: numeroMesa,
+      capacidad: capacidad,
+      estado: EstadoMesa.libre,
+    ));
+  }
+
+  @override
+  Future<void> actualizar(int idMesa, {required int numeroMesa, required int capacidad}) async {
+    _revisar();
+    final i = mesas_.indexWhere((m) => m.idMesa == idMesa);
+    mesas_[i] = mesas_[i].copyWith(numeroMesa: numeroMesa, capacidad: capacidad);
+  }
+
+  @override
+  Future<void> eliminar(int idMesa) async {
+    _revisar();
+    mesas_.removeWhere((m) => m.idMesa == idMesa);
+  }
 }
 
 List<Platillo> menuDePrueba() => const [
@@ -113,6 +192,7 @@ class FakePedidoRepository implements PedidoRepository {
   final creados = <({TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
   final actualizados = <({int folio, TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
   final cancelados = <(int, String)>[];
+  final descuentos = <({int folio, double monto, bool esCortesia, String motivo})>[];
   PedidoDetalle? detalleParaEditar;
 
   /// Si no es null, crear/actualizar fallan con este mensaje.
@@ -146,6 +226,29 @@ class FakePedidoRepository implements PedidoRepository {
 
   @override
   Future<void> cancelarPedido(int folio, String motivo) async => cancelados.add((folio, motivo));
+
+  @override
+  Future<void> aplicarDescuento({
+    required int folio,
+    required double monto,
+    required bool esCortesia,
+    required String motivo,
+  }) async {
+    if (errorAlGuardar != null) throw ErrorDeNegocio(errorAlGuardar!);
+    descuentos.add((folio: folio, monto: monto, esCortesia: esCortesia, motivo: motivo));
+    // Emula lo que hace la base: recalcula el total y deja el motivo.
+    final d = detalleParaEditar;
+    if (d != null) {
+      final bruto = d.totalSinDescuento;
+      final aplicado = esCortesia ? bruto : (monto > bruto ? bruto : monto);
+      detalleParaEditar = d.copyWith(
+        descuento: aplicado,
+        esCortesia: esCortesia,
+        motivoDescuento: motivo,
+        total: esCortesia ? 0 : bruto - aplicado,
+      );
+    }
+  }
 
   @override
   Future<List<PedidoResumen>> pedidosDelDia() async => pedidos;
@@ -194,6 +297,19 @@ class FakeEmpleadoRepository implements EmpleadoRepository {
 
   @override
   Future<void> cambiarActivo(int idEmpleado, {required bool activo}) async {}
+
+  final editadas = <({int id, String nombre, String? turno, RolUsuario rol})>[];
+
+  /// Si no es null, `editar` falla con este mensaje.
+  String? errorAlEditar;
+
+  @override
+  Future<void> editar(int idEmpleado, {required String nombre, String? turno, required RolUsuario rol}) async {
+    if (errorAlEditar != null) throw ErrorDeNegocio(errorAlEditar!);
+    editadas.add((id: idEmpleado, nombre: nombre, turno: turno, rol: rol));
+    final i = cuentas.indexWhere((c) => c.idEmpleado == idEmpleado);
+    cuentas[i] = cuentas[i].copyWith(nombre: nombre, turno: turno, rol: rol);
+  }
 }
 
 PedidoResumen pedidoDePrueba({

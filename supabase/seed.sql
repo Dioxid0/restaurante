@@ -6,7 +6,7 @@
 -- el correo es <usuario>@restaurante.local):
 --   mesero   / Mesero#2026
 --   chef     / Chef#2026
---   gerente  / Gerente#2026   (PIN del gerente: 1234)
+--   gerente  / Gerente#2026
 --   cliente@correo.com / Cliente#2026   (cliente; entra con su correo)
 -- =====================================================================
 

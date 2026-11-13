@@ -5,8 +5,13 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../domain/entities/pedido.dart';
 import '../../domain/entities/perfil.dart';
+import '../../core/ui/toast.dart';
+import '../../domain/entities/solicitud_cambio.dart';
 import '../../domain/errors.dart';
 import '../auth/auth_providers.dart';
+import '../solicitudes/dialogo_solicitud.dart';
+import '../solicitudes/panel_solicitudes.dart';
+import '../solicitudes/solicitudes_providers.dart';
 import 'detalle/detalle_pedido_dialog.dart';
 import 'pedidos_providers.dart';
 import 'widgets/pedidos_tabla.dart';
@@ -67,6 +72,18 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     }
   }
 
+  /// Mesero: pide al gerente modificar o cancelar un pedido que ya está en cocina (RN-03).
+  Future<void> _solicitarCambio(PedidoResumen p) async {
+    final r = await mostrarDialogoSolicitud(context, folio: p.folioEtiqueta);
+    if (r == null || !mounted) return;
+    try {
+      await ref.read(solicitudesDeHoyProvider.notifier).solicitar(p.folio, r.tipo, r.motivo);
+      if (mounted) mostrarToast(context, 'Solicitud enviada al gerente');
+    } catch (e) {
+      if (mounted) mostrarToast(context, mensajeDeError(e), tipo: TipoToast.error);
+    }
+  }
+
   List<PedidoResumen> _filtrar(List<PedidoResumen> todos) {
     final q = _busqueda.trim().toLowerCase();
     return todos.where((p) {
@@ -87,6 +104,10 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     final puedeOperar = rol == RolUsuario.mesero || rol == RolUsuario.gerente;
     // Tomar pedidos es del mesero; el gerente supervisa, edita y cancela.
     final puedeCrear = rol == RolUsuario.mesero;
+    // Solicitudes de cambio (RN-03): las ven el mesero (su estado) y el gerente (las resuelve).
+    final lista = (rol == RolUsuario.mesero || rol == RolUsuario.gerente)
+        ? (ref.watch(solicitudesDeHoyProvider).value ?? const <SolicitudCambio>[])
+        : const <SolicitudCambio>[];
 
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 26, 28, 28),
@@ -100,8 +121,10 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
                 alNuevo: puedeCrear ? () => context.go('/pedido/nuevo') : null,
               ),
               const SizedBox(height: 22),
+              if (rol == RolUsuario.gerente) const PanelSolicitudes(),
               if (pedidos.hasValue)
-                _contenido(pedidos.requireValue, ahora, puedeOperar, rol == RolUsuario.gerente)
+                _contenido(pedidos.requireValue, ahora, puedeOperar, rol == RolUsuario.gerente,
+                    ultimaSolicitudPorFolio(lista), rol == RolUsuario.mesero)
               else if (pedidos.hasError)
                 _Error(alReintentar: () => ref.invalidate(pedidosDelDiaProvider))
               else
@@ -116,7 +139,14 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
     );
   }
 
-  Widget _contenido(List<PedidoResumen> todos, DateTime ahora, bool puedeOperar, bool esGerente) {
+  Widget _contenido(
+    List<PedidoResumen> todos,
+    DateTime ahora,
+    bool puedeOperar,
+    bool esGerente,
+    Map<int, SolicitudCambio> solicitudes,
+    bool esMesero,
+  ) {
     final filtrados = _filtrar(todos);
     final paginas = (filtrados.length / _porPagina).ceil().clamp(1, 1 << 30);
     final pagina = _pagina.clamp(0, paginas - 1);
@@ -149,6 +179,8 @@ class _ComanderiaScreenState extends ConsumerState<ComanderiaScreen> {
             ahora: ahora,
             puedeOperar: puedeOperar,
             esGerente: esGerente,
+            solicitudes: solicitudes,
+            alSolicitar: esMesero ? _solicitarCambio : null,
             alCambiarEstado: _cambiarEstado,
             alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
             alVer: (p) => mostrarDetallePedido(context, p.folio),
