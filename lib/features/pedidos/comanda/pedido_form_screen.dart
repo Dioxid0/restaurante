@@ -14,6 +14,7 @@ import '../../auth/auth_providers.dart';
 import 'comanda_controller.dart';
 import 'comanda_providers.dart';
 import 'comanda_state.dart';
+import '../widgets/dialogo_motivo.dart';
 import 'widgets/barra_comanda.dart';
 import 'widgets/panel_comanda.dart';
 import 'widgets/platillo_card.dart';
@@ -154,7 +155,7 @@ class _FormularioState extends ConsumerState<_Formulario> {
   Future<void> _cancelarPedido() async {
     final motivo = await showDialog<String>(
       context: context,
-      builder: (_) => _DialogoMotivo(folio: _detalleFolio()),
+      builder: (_) => DialogoMotivo(folio: _detalleFolio()),
     );
     if (motivo == null || !mounted) return;
     try {
@@ -431,56 +432,6 @@ class _ChipCategoria extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-/// Pide el motivo de la cancelación (obligatorio).
-class _DialogoMotivo extends StatefulWidget {
-  const _DialogoMotivo({required this.folio});
-  final String folio;
-
-  @override
-  State<_DialogoMotivo> createState() => _DialogoMotivoState();
-}
-
-class _DialogoMotivoState extends State<_DialogoMotivo> {
-  final _controlador = TextEditingController();
-
-  @override
-  void dispose() {
-    _controlador.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final motivo = _controlador.text.trim();
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      surfaceTintColor: Colors.transparent,
-      title: Text('Cancelar pedido ${widget.folio}'),
-      content: SizedBox(
-        width: 400,
-        child: TextField(
-          controller: _controlador,
-          autofocus: true,
-          maxLength: 200,
-          onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(
-            labelText: 'Motivo de la cancelación',
-            hintText: 'Ej. El cliente se retiró',
-          ),
-        ),
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Volver')),
-        FilledButton(
-          onPressed: motivo.isEmpty ? null : () => Navigator.pop(context, motivo),
-          style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
-          child: const Text('Cancelar pedido'),
-        ),
-      ],
     );
   }
 }

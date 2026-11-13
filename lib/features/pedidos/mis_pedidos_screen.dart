@@ -3,16 +3,20 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../core/ui/toast.dart';
+import '../../data/repository_providers.dart';
 import '../../domain/entities/pedido.dart';
+import '../../domain/errors.dart';
 import '../auth/auth_providers.dart';
 import 'comanderia_screen.dart' show PaginadorPedidos, pedidosPorPagina;
 import 'pedidos_providers.dart';
+import 'widgets/dialogo_motivo.dart';
 import 'widgets/pedidos_tabla.dart';
 
 /// Inicio del cliente (CU-08): seguimiento de sus pedidos de hoy.
 ///
 /// Es la Comandería del mesero simplificada: sin filtros ni buscador y sin Mesa/Tipo; solo
-/// Folio, Hora, Estado, Total y "Editar" (únicamente mientras el pedido está pendiente, RN-03;
+/// Folio, Hora, Estado, Total y "Editar"/"Cancelar" (únicamente mientras el pedido está pendiente, RN-03;
 /// la base lo exige de verdad). La base (RLS) solo entrega los pedidos del propio cliente,
 /// y se actualiza sola en tiempo real.
 /// (Diseño provisional hasta recibir la pantalla de Figma.)
@@ -25,6 +29,23 @@ class MisPedidosScreen extends ConsumerStatefulWidget {
 
 class _MisPedidosScreenState extends ConsumerState<MisPedidosScreen> {
   int _pagina = 0;
+
+  /// El cliente cancela uno de sus pedidos pendientes, indicando el motivo.
+  /// La base lo exige de verdad (RN-03): si ya está en preparación lo rechaza.
+  Future<void> _cancelar(PedidoResumen p) async {
+    final motivo = await showDialog<String>(
+      context: context,
+      builder: (_) => DialogoMotivo(folio: p.folioEtiqueta),
+    );
+    if (motivo == null || !mounted) return;
+    try {
+      await ref.read(pedidoRepositoryProvider).cancelarPedido(p.folio, motivo);
+      ref.invalidate(pedidosDelDiaProvider);
+      if (mounted) mostrarToast(context, 'Pedido cancelado');
+    } catch (e) {
+      if (mounted) mostrarToast(context, mensajeDeError(e), tipo: TipoToast.error);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -97,6 +118,7 @@ class _MisPedidosScreenState extends ConsumerState<MisPedidosScreen> {
               pedidos: visibles,
               ahora: ahora,
               alEditar: (p) => context.go('/pedido/${p.folio}/editar'),
+              alCancelar: _cancelar,
             ),
           PaginadorPedidos(
             mostrando: visibles.length,

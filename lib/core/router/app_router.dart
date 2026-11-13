@@ -3,16 +3,16 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../features/cocina/cocina_screen.dart';
-import '../../features/reservaciones/reservaciones_screen.dart';
 
 import '../../data/repository_providers.dart';
+import '../../domain/entities/perfil.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/registro_screen.dart';
+import '../../features/cocina/cocina_screen.dart';
 import '../../features/gerencia/gerencia_screen.dart';
-import '../../domain/entities/perfil.dart';
 import '../../features/home/inicio_screen.dart';
 import '../../features/pedidos/comanda/pedido_form_screen.dart';
+import '../../features/reservaciones/reservaciones_screen.dart';
 import '../../features/shell/shell_autenticado.dart';
 import 'destinos.dart';
 
