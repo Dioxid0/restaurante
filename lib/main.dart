@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show SystemUiOverlayStyle;
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -39,6 +40,11 @@ class RestaurantApp extends ConsumerWidget {
       title: 'El Buen Sabor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      // Toda la app está en español: los selectores de fecha y hora, los tooltips y los
+      // menús del sistema salen en español sin importar el idioma del teléfono o de Windows.
+      locale: const Locale('es', 'MX'),
+      supportedLocales: const [Locale('es', 'MX'), Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(appRouterProvider),
       // Escala automática en pantallas grandes + zoom del usuario (Ctrl +/−/0).
       // El marco va DENTRO de la escala: EscalaInterfaz fija el alto de la pantalla y un
