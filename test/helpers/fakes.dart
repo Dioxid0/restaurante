@@ -113,6 +113,7 @@ class FakePedidoRepository implements PedidoRepository {
   final creados = <({TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
   final actualizados = <({int folio, TipoPedido tipo, int? idMesa, List<ItemPedido> items})>[];
   final cancelados = <(int, String)>[];
+  final descuentos = <({int folio, double monto, bool esCortesia, String motivo})>[];
   PedidoDetalle? detalleParaEditar;
 
   /// Si no es null, crear/actualizar fallan con este mensaje.
@@ -146,6 +147,29 @@ class FakePedidoRepository implements PedidoRepository {
 
   @override
   Future<void> cancelarPedido(int folio, String motivo) async => cancelados.add((folio, motivo));
+
+  @override
+  Future<void> aplicarDescuento({
+    required int folio,
+    required double monto,
+    required bool esCortesia,
+    required String motivo,
+  }) async {
+    if (errorAlGuardar != null) throw ErrorDeNegocio(errorAlGuardar!);
+    descuentos.add((folio: folio, monto: monto, esCortesia: esCortesia, motivo: motivo));
+    // Emula lo que hace la base: recalcula el total y deja el motivo.
+    final d = detalleParaEditar;
+    if (d != null) {
+      final bruto = d.totalSinDescuento;
+      final aplicado = esCortesia ? bruto : (monto > bruto ? bruto : monto);
+      detalleParaEditar = d.copyWith(
+        descuento: aplicado,
+        esCortesia: esCortesia,
+        motivoDescuento: motivo,
+        total: esCortesia ? 0 : bruto - aplicado,
+      );
+    }
+  }
 
   @override
   Future<List<PedidoResumen>> pedidosDelDia() async => pedidos;

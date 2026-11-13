@@ -2,12 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/theme/app_colors.dart';
+import '../../../core/ui/toast.dart';
 import '../../../core/utils/formato.dart';
 import '../../../domain/entities/pedido.dart';
 import '../../../domain/entities/pedido_detalle.dart';
+import '../../../domain/entities/perfil.dart';
+import '../../../data/repository_providers.dart';
 import '../../../domain/errors.dart';
+import '../../auth/auth_providers.dart';
 import '../comanda/comanda_providers.dart';
+import '../pedidos_providers.dart';
 import '../widgets/pedido_chips.dart';
+import 'dialogo_descuento.dart';
 
 /// Muestra el modal con todos los datos de un pedido.
 Future<void> mostrarDetallePedido(BuildContext context, int folio) => showDialog<void>(
@@ -20,9 +26,41 @@ class DetallePedidoDialog extends ConsumerWidget {
   const DetallePedidoDialog({super.key, required this.folio});
   final int folio;
 
+  /// CU-09: el gerente aplica (o quita) un descuento o una cortesía y se recarga el detalle.
+  Future<void> _ajustar(BuildContext context, WidgetRef ref, PedidoDetalle d) async {
+    final r = await mostrarDialogoDescuento(
+      context,
+      folio: d.folioEtiqueta,
+      bruto: d.totalSinDescuento,
+      descuentoActual: d.descuento,
+    );
+    if (r == null || !context.mounted) return;
+    try {
+      await ref.read(pedidoRepositoryProvider).aplicarDescuento(
+            folio: d.folio,
+            monto: r.monto,
+            esCortesia: r.esCortesia,
+            motivo: r.motivo,
+          );
+      ref.invalidate(detallePedidoProvider(folio));
+      ref.invalidate(pedidosDelDiaProvider);
+      if (context.mounted) {
+        mostrarToast(
+          context,
+          r.esCortesia
+              ? 'Cortesía aplicada'
+              : (r.monto == 0 ? 'Descuento retirado' : 'Descuento aplicado'),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) mostrarToast(context, mensajeDeError(e), tipo: TipoToast.error);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final detalle = ref.watch(detallePedidoProvider(folio));
+    final esGerente = ref.watch(perfilActualProvider).value?.rol == RolUsuario.gerente;
 
     return Dialog(
       backgroundColor: Colors.white,
@@ -42,7 +80,14 @@ class DetallePedidoDialog extends ConsumerWidget {
               mensaje: mensajeDeError(e, porDefecto: 'No se pudo cargar el pedido'),
               alCerrar: () => Navigator.of(context).pop(),
             ),
-            data: (d) => _Contenido(detalle: d, alCerrar: () => Navigator.of(context).pop()),
+            data: (d) => _Contenido(
+              detalle: d,
+              alCerrar: () => Navigator.of(context).pop(),
+              // Solo el gerente (la base también lo exige) y no en pedidos cancelados.
+              alAjustar: esGerente && d.estado != EstadoPedido.cancelado
+                  ? () => _ajustar(context, ref, d)
+                  : null,
+            ),
           ),
         ),
       ),
@@ -51,13 +96,17 @@ class DetallePedidoDialog extends ConsumerWidget {
 }
 
 class _Contenido extends StatelessWidget {
-  const _Contenido({required this.detalle, required this.alCerrar});
+  const _Contenido({required this.detalle, required this.alCerrar, this.alAjustar});
   final PedidoDetalle detalle;
   final VoidCallback alCerrar;
 
+  /// Gerente: abre el cuadro de descuento o cortesía. Null = no se ofrece.
+  final VoidCallback? alAjustar;
+
   @override
   Widget build(BuildContext context) {
-    final iva = desgloseIva(detalle.total);
+    // Subtotal e IVA se calculan sobre lo que costaba el pedido; el descuento se resta después.
+    final iva = desgloseIva(detalle.totalSinDescuento);
     final tipo = detalle.tipo == TipoPedido.enMesa ? 'Presencial' : 'Para Llevar';
     final mesero = detalle.nombreMesero ?? (detalle.esEnLinea ? 'En línea' : '—');
     final cliente = detalle.nombreCliente;
@@ -195,6 +244,17 @@ class _Contenido extends StatelessWidget {
                     detalle.esCortesia ? 'Cortesía' : 'Descuento',
                     '-${formatoMoneda(detalle.descuento)}',
                   ),
+                  if ((detalle.motivoDescuento ?? '').isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Motivo: ${detalle.motivoDescuento}',
+                          style: const TextStyle(color: AppColors.textFaint, fontSize: 10.5),
+                        ),
+                      ),
+                    ),
                 ],
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 10),
@@ -219,6 +279,24 @@ class _Contenido extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 18),
+        if (alAjustar != null) ...[
+          SizedBox(
+            width: double.infinity,
+            height: 46,
+            child: OutlinedButton.icon(
+              onPressed: alAjustar,
+              icon: const Icon(Icons.sell_outlined, size: 18),
+              label: Text(detalle.descuento > 0 ? 'Cambiar descuento o cortesía' : 'Aplicar descuento o cortesía'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFFB45309),
+                side: const BorderSide(color: Color(0xFFFDBA74)),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
         SizedBox(
           width: double.infinity,
           height: 50,

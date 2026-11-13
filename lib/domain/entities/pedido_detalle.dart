@@ -51,9 +51,14 @@ abstract class PedidoDetalle with _$PedidoDetalle {
     @Default(0.0) double total,
     @Default(0.0) double descuento,
     @Default(false) bool esCortesia,
+    String? motivoDescuento,
   }) = _PedidoDetalle;
 
   String get folioEtiqueta => '#PED-${folioDia.toString().padLeft(3, '0')}';
+
+  /// Lo que costaba el pedido antes del descuento o la cortesía (con IVA incluido).
+  /// En una cortesía el total es 0 y el descuento guarda el importe completo.
+  double get totalSinDescuento => total + descuento;
 
   String? get mesaEtiqueta =>
       numeroMesa == null ? null : 'M-${numeroMesa.toString().padLeft(2, '0')}';
