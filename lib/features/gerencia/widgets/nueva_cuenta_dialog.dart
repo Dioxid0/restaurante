@@ -21,7 +21,6 @@ class _NuevaCuentaDialogState extends ConsumerState<NuevaCuentaDialog> {
   final _nombre = TextEditingController();
   final _usuario = TextEditingController();
   final _password = TextEditingController();
-  final _pin = TextEditingController();
   RolUsuario _rol = RolUsuario.mesero;
   String _turno = _turnos.first;
   bool _verPassword = false;
@@ -33,7 +32,6 @@ class _NuevaCuentaDialogState extends ConsumerState<NuevaCuentaDialog> {
     _nombre.dispose();
     _usuario.dispose();
     _password.dispose();
-    _pin.dispose();
     super.dispose();
   }
 
@@ -50,7 +48,6 @@ class _NuevaCuentaDialogState extends ConsumerState<NuevaCuentaDialog> {
             password: _password.text,
             rol: _rol,
             turno: _turno.toLowerCase(),
-            pin: _rol == RolUsuario.gerente && _pin.text.isNotEmpty ? _pin.text : null,
           );
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
@@ -137,21 +134,6 @@ class _NuevaCuentaDialogState extends ConsumerState<NuevaCuentaDialog> {
                     ),
                   ],
                 ),
-                if (_rol == RolUsuario.gerente) ...[
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _pin,
-                    obscureText: true,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'PIN de autorización (opcional)',
-                      helperText: '4 a 6 dígitos; se usa para autorizar cambios en pedidos',
-                    ),
-                    validator: (v) => (v != null && v.isNotEmpty && !RegExp(r'^\d{4,6}$').hasMatch(v))
-                        ? 'Debe tener de 4 a 6 dígitos'
-                        : null,
-                  ),
-                ],
                 if (_error != null) ...[
                   const SizedBox(height: 14),
                   Text(_error!, style: const TextStyle(color: AppColors.danger, fontSize: 13)),
