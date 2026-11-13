@@ -69,6 +69,7 @@ class MesasAdminView extends ConsumerWidget {
       descripcion: 'Administra las mesas del restaurante y su capacidad.',
       accion: BotonAccion(etiqueta: 'Nueva mesa', icono: Icons.add, alPresionar: nueva),
       hijo: PanelBlanco(
+        anchoMinimo: 560,
         hijo: mesas.when(
           loading: () => const CargandoOError(),
           error: (e, _) => CargandoOError(
@@ -106,8 +107,8 @@ class MesasAdminView extends ConsumerWidget {
                       },
                       style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
                     ),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         TextButton(onPressed: () => editar(m), child: const Text('Editar')),
                         TextButton(

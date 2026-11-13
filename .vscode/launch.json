@@ -9,6 +9,13 @@
       "args": ["--dart-define-from-file=.env.json"]
     },
     {
+      "name": "Restaurante (Windows, Supabase NUBE)",
+      "request": "launch",
+      "type": "dart",
+      "deviceId": "windows",
+      "args": ["--dart-define-from-file=.env.nube.json"]
+    },
+    {
       "name": "Restaurante (Windows, profile)",
       "request": "launch",
       "type": "dart",

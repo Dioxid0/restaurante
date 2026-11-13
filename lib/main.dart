@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemUiOverlayStyle;
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
+import 'core/theme/app_colors.dart';
 import 'core/theme/app_theme.dart';
 import 'core/ui/zoom.dart';
 
@@ -37,9 +40,40 @@ class RestaurantApp extends ConsumerWidget {
       title: 'El Buen Sabor',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
+      // Toda la app está en español: los selectores de fecha y hora, los tooltips y los
+      // menús del sistema salen en español sin importar el idioma del teléfono o de Windows.
+      locale: const Locale('es', 'MX'),
+      supportedLocales: const [Locale('es', 'MX'), Locale('es')],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: ref.watch(appRouterProvider),
       // Escala automática en pantallas grandes + zoom del usuario (Ctrl +/−/0).
-      builder: (context, child) => EscalaInterfaz(child: child ?? const SizedBox.shrink()),
+      // El marco va DENTRO de la escala: EscalaInterfaz fija el alto de la pantalla y un
+      // SafeArea por fuera lo dejaría más alto que la ventana (se cortaba la parte de abajo).
+      builder: (context, child) => EscalaInterfaz(
+        child: _MarcoDelSistema(child: child ?? const SizedBox.shrink()),
+      ),
+    );
+  }
+}
+
+/// En el teléfono la app se dibuja a pantalla completa (Android 15): sin esto los
+/// encabezados quedan debajo de la barra de estado (hora, batería). Deja ese espacio con el
+/// color del encabezado y pone los íconos de la barra en claro. En escritorio no hay inset: no cambia nada.
+class _MarcoDelSistema extends StatelessWidget {
+  const _MarcoDelSistema({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+      ),
+      child: ColoredBox(
+        color: AppColors.navy900,
+        child: SafeArea(bottom: false, child: child),
+      ),
     );
   }
 }

@@ -6,6 +6,7 @@ import 'cuentas_view.dart';
 import 'menu_admin_view.dart';
 import 'mesas_admin_view.dart';
 import 'reporte_view.dart';
+import 'widgets/vista_comun.dart';
 
 enum _Seccion { reporte, menu, mesas, cuentas, bitacora }
 
@@ -26,7 +27,13 @@ class _GerenciaScreenState extends State<GerenciaScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(28, 18, 28, 0),
+          // Mismo margen lateral que las secciones (16 px en teléfono, 28 px en escritorio).
+          padding: EdgeInsets.fromLTRB(
+            MediaQuery.sizeOf(context).width < SeccionGerencia.anchoAngosto ? 16 : 28,
+            18,
+            MediaQuery.sizeOf(context).width < SeccionGerencia.anchoAngosto ? 16 : 28,
+            0,
+          ),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1500),

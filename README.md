@@ -178,6 +178,46 @@ Dominio, roles y reglas de negocio: [docs/dominio.md](docs/dominio.md).
 npx supabase stop
 ```
 
+### 14. (Opcional) Probar en Android
+Requiere **Android Studio** (instala el SDK; en *SDK Manager* agrega Command-line Tools, una plataforma reciente y, para el emulador, una imagen del sistema). Después `flutter doctor` debe marcar "Android toolchain" en verde.
+
+- **Emulador o teléfono por USB** (activa "Opciones de desarrollador" y "Depuración por USB"; `flutter devices` lista los dispositivos).
+- **Con la base local**: el teléfono *no* puede usar `127.0.0.1` (ahí es él mismo). El script lo resuelve:
+  ```powershell
+  .\scripts\run_android.ps1                          # emulador (usa 10.0.2.2)
+  .\scripts\run_android.ps1 -Servidor 192.168.1.50   # teléfono real: IP de tu laptop (ipconfig)
+  ```
+  El teléfono y la laptop deben estar en la **misma red** (o la laptop conectada al punto de acceso del teléfono). Si Windows pregunta por el firewall al iniciar Docker, permite las redes privadas.
+
+### 15. (Opcional) Supabase en la nube e instalables (.exe / .apk)
+La app elige la base **al compilar**, con `--dart-define`; el código no cambia y la base local sigue funcionando igual.
+
+1. En [supabase.com](https://supabase.com) crea un proyecto (guarda la contraseña de la base de datos; no la compartas).
+2. Sube el esquema. **Ojo:** este CLI apunta a la base *local* por defecto, hace falta `--remote`:
+   ```powershell
+   npx supabase login
+   npx supabase link --project-ref <ID_DEL_PROYECTO>
+   npx supabase db push --remote
+   ```
+3. Datos iniciales con **contraseñas nuevas** (las del `seed.sql` son públicas, no las uses en la nube):
+   ```powershell
+   .\scripts\preparar_semilla_nube.ps1
+   Get-Content supabase\seed_nube.local.sql -Raw | Set-Clipboard
+   ```
+   Pega el contenido en *SQL Editor* del panel de Supabase y ejecútalo **una sola vez**. Las contraseñas quedan en `credenciales-nube.txt` (ignorado por Git).
+4. Guarda la URL y la llave **pública** (publishable/anon, nunca `service_role` ni `secret`):
+   ```powershell
+   .\scripts\configurar_nube.ps1 -Url https://<ID>.supabase.co -Clave <llave-publica>
+   ```
+5. Corre contra la nube: `.\scripts\run_nube.ps1` (o la configuración "Supabase NUBE" de VS Code).
+6. En el panel, *Authentication → Sign In / Providers*: con "Confirm email" activado, un cliente nuevo debe confirmar su correo; apágalo solo si quieres registro inmediato en la demostración.
+7. Instalables (carpeta `dist\`, ignorada por Git), uno por base de datos:
+   ```powershell
+   .\scripts\compilar.ps1 -Entorno nube                              # necesita internet
+   .\scripts\compilar.ps1 -Entorno local -Plataforma apk -Servidor 192.168.1.50   # sin internet
+   ```
+   El .exe es la carpeta completa `dist\windows-<entorno>\` (programa `restaurant_app.exe`). El plan gratuito de Supabase **pausa** el proyecto tras una semana sin uso: reactívalo desde el panel antes de una demostración.
+
 ---
 
 ## Colaboración con Git

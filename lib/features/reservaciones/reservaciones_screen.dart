@@ -76,62 +76,70 @@ class _ReservacionesScreenState extends ConsumerState<ReservacionesScreen> {
     // El reloj avanza solo, así los avisos de las 5 horas aparecen sin recargar.
     final ahora = ref.watch(relojProvider).value ?? DateTime.now();
 
+    final angosto = MediaQuery.sizeOf(context).width < 620;
+    final textos = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'RESERVACIONES',
+          style: TextStyle(
+            color: AppColors.amber,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          esCliente ? 'Mis reservaciones' : 'Reservaciones',
+          style: TextStyle(fontSize: angosto ? 24 : 30, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          esCliente
+              ? 'Reserva con 5 horas de anticipación o más y confírmala antes de que se cierre ese plazo.'
+              : esGerente
+                  ? 'Reservaciones de todos los clientes. Puedes modificarlas o cancelarlas.'
+                  : 'Reservaciones de todos los clientes (solo consulta).',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+        ),
+      ],
+    );
+    // Solo el cliente reserva.
+    final botonNueva = esCliente
+        ? FilledButton.icon(
+            onPressed: () => _abrirFormulario(esCliente: true),
+            icon: const Icon(Icons.add, size: 20),
+            label: const Text('Nueva reservación'),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.amber,
+              padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
+              textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
+            ),
+          )
+        : null;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 26, 28, 28),
+      padding: EdgeInsets.fromLTRB(angosto ? 16 : 28, 26, angosto ? 16 : 28, 28),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'RESERVACIONES',
-                          style: TextStyle(
-                            color: AppColors.amber,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          esCliente ? 'Mis reservaciones' : 'Reservaciones',
-                          style: const TextStyle(fontSize: 30, fontWeight: FontWeight.w600),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          esCliente
-                              ? 'Reserva con 5 horas de anticipación o más y confírmala antes de que se cierre ese plazo.'
-                              : esGerente
-                                  ? 'Reservaciones de todos los clientes. Puedes modificarlas o cancelarlas.'
-                                  : 'Reservaciones de todos los clientes (solo consulta).',
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Solo el cliente reserva.
-                  if (esCliente)
-                    FilledButton.icon(
-                      onPressed: () => _abrirFormulario(esCliente: true),
-                      icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Nueva reservación'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: AppColors.amber,
-                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-                        textStyle: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(13)),
-                      ),
-                    ),
+              // En teléfono el botón baja debajo del título, a todo el ancho.
+              if (angosto) ...[
+                textos,
+                if (botonNueva != null) ...[
+                  const SizedBox(height: 14),
+                  SizedBox(width: double.infinity, child: botonNueva),
                 ],
-              ),
+              ] else
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [Expanded(child: textos), ?botonNueva],
+                ),
               const SizedBox(height: 18),
               Wrap(
                 spacing: 8,

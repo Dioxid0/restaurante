@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../../../core/ui/toast.dart';
+import '../../../core/utils/formato.dart';
 import '../../../domain/entities/mesa.dart';
 import '../../../domain/entities/pedido.dart';
 import '../../../domain/entities/pedido_detalle.dart';
@@ -59,6 +60,19 @@ class _FormularioState extends ConsumerState<_Formulario> {
   bool _cargando = false;
   Object? _errorDeCarga;
   PedidoDetalle? _detalle;
+
+  // Teléfono: la comanda va debajo del menú; la barra inferior lleva hasta ella.
+  final _panelKey = GlobalKey();
+
+  void _irALaComanda() {
+    final contexto = _panelKey.currentContext;
+    if (contexto == null) return;
+    Scrollable.ensureVisible(
+      contexto,
+      duration: const Duration(milliseconds: 350),
+      curve: Curves.easeOut,
+    );
+  }
 
   bool get _esCliente => widget.perfil.rol == RolUsuario.cliente;
   bool get _editando => widget.folio != null;
@@ -278,19 +292,67 @@ class _FormularioState extends ConsumerState<_Formulario> {
                     ],
                   );
                 }
-                // Ventana angosta: menú arriba y comanda debajo.
-                return SingleChildScrollView(
-                  child: Column(
-                    children: [
-                      Padding(padding: const EdgeInsets.all(20), child: contenidoMenu),
-                      SizedBox(height: 640, child: panel),
-                    ],
-                  ),
+                // Ventana angosta (teléfono): menú arriba y comanda debajo, con una barra
+                // inferior fija (platillos y total) que lleva hasta la comanda.
+                return Column(
+                  children: [
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          children: [
+                            Padding(padding: const EdgeInsets.all(20), child: contenidoMenu),
+                            SizedBox(key: _panelKey, height: 640, child: panel),
+                          ],
+                        ),
+                      ),
+                    ),
+                    _BarraResumen(estado: estado, alTocar: _irALaComanda),
+                  ],
                 );
               },
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Barra inferior del teléfono: cuántos platillos lleva la comanda y el total.
+/// Al tocarla se baja hasta el resumen para enviarla.
+class _BarraResumen extends StatelessWidget {
+  const _BarraResumen({required this.estado, required this.alTocar});
+  final ComandaState estado;
+  final VoidCallback alTocar;
+
+  @override
+  Widget build(BuildContext context) {
+    final n = estado.numeroLineas;
+    final bottom = MediaQuery.viewPaddingOf(context).bottom;
+    return Material(
+      color: AppColors.navy900,
+      child: InkWell(
+        onTap: alTocar,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(18, 12, 18, 12 + bottom),
+          child: Row(
+            children: [
+              const Icon(Icons.receipt_long_outlined, size: 20, color: Color(0xFFFBBF24)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  n == 0 ? 'Comanda vacía' : '$n ${n == 1 ? 'platillo' : 'platillos'} · ${formatoMoneda(estado.total)}',
+                  style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+              ),
+              const Text(
+                'Ver comanda',
+                style: TextStyle(color: Color(0xFFFBBF24), fontSize: 13, fontWeight: FontWeight.w800),
+              ),
+              const Icon(Icons.keyboard_arrow_down, color: Color(0xFFFBBF24)),
+            ],
+          ),
+        ),
       ),
     );
   }

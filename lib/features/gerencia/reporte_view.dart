@@ -124,25 +124,36 @@ class _Contenido extends StatelessWidget {
       children: [
         Text(rango, style: const TextStyle(color: AppColors.textMuted, fontWeight: FontWeight.w600)),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 14,
-          runSpacing: 14,
-          children: [
-            _Kpi(titulo: 'VENTAS', valor: formatoMoneda(r.ventas), detalle: 'Ya con descuentos'),
-            _Kpi(
-              titulo: 'PEDIDOS',
-              valor: '${r.pedidosValidos}',
-              detalle: '${r.pedidosTotal} en total · ${r.cancelacionesCantidad} cancelados',
-            ),
-            _Kpi(titulo: 'TICKET PROMEDIO', valor: formatoMoneda(r.ticketPromedio), detalle: 'Por pedido'),
-            _Kpi(
-              titulo: 'PÉRDIDA POR CANCELACIONES',
-              valor: formatoMoneda(r.cancelacionesPerdida),
-              detalle: '${r.cancelacionesCantidad} cancelaciones',
-              alerta: r.cancelacionesCantidad > 0,
-            ),
-          ],
-        ),
+        LayoutBuilder(builder: (context, c) {
+          // Teléfono: dos tarjetas por fila que ocupan todo el ancho; escritorio: 280 px fijos.
+          final ancho = c.maxWidth < 620 ? (c.maxWidth - 14) / 2 : 280.0;
+          return Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: [
+              _Kpi(ancho: ancho, titulo: 'VENTAS', valor: formatoMoneda(r.ventas), detalle: 'Ya con descuentos'),
+              _Kpi(
+                ancho: ancho,
+                titulo: 'PEDIDOS',
+                valor: '${r.pedidosValidos}',
+                detalle: '${r.pedidosTotal} en total · ${r.cancelacionesCantidad} cancelados',
+              ),
+              _Kpi(
+                ancho: ancho,
+                titulo: 'TICKET PROMEDIO',
+                valor: formatoMoneda(r.ticketPromedio),
+                detalle: 'Por pedido',
+              ),
+              _Kpi(
+                ancho: ancho,
+                titulo: 'PÉRDIDA POR CANCELACIONES',
+                valor: formatoMoneda(r.cancelacionesPerdida),
+                detalle: '${r.cancelacionesCantidad} cancelaciones',
+                alerta: r.cancelacionesCantidad > 0,
+              ),
+            ],
+          );
+        }),
         const SizedBox(height: 14),
         _Fila(hijos: [
           _Tarjeta(titulo: 'Pedidos por estado', hijo: _PorEstado(r.porEstado)),
@@ -224,7 +235,14 @@ class _Tarjeta extends StatelessWidget {
 }
 
 class _Kpi extends StatelessWidget {
-  const _Kpi({required this.titulo, required this.valor, required this.detalle, this.alerta = false});
+  const _Kpi({
+    required this.ancho,
+    required this.titulo,
+    required this.valor,
+    required this.detalle,
+    this.alerta = false,
+  });
+  final double ancho;
   final String titulo;
   final String valor;
   final String detalle;
@@ -233,7 +251,7 @@ class _Kpi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 280,
+      width: ancho,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,

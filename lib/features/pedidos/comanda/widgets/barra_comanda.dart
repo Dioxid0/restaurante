@@ -31,9 +31,13 @@ class BarraComanda extends StatelessWidget {
   final ValueChanged<TipoPedido> alCambiarTipo;
   final ValueChanged<bool> alCambiarSinMesa;
 
+  /// Debajo de este ancho (teléfono) la barra se compacta en dos filas.
+  static const anchoCompacto = 700.0;
+
   @override
   Widget build(BuildContext context) {
     final paraLlevar = tipo == TipoPedido.paraLlevar;
+    if (MediaQuery.sizeOf(context).width < anchoCompacto) return _compacta(paraLlevar);
     return Container(
       width: double.infinity, // la barra oscura ocupa todo el ancho, como en el diseño
       color: AppColors.navy900,
@@ -108,12 +112,109 @@ class BarraComanda extends StatelessWidget {
   }
 }
 
+extension on BarraComanda {
+  /// Teléfono: fila 1 = volver (solo ícono) + mesa; fila 2 = tipo de pedido a todo el ancho.
+  Widget _compacta(bool paraLlevar) {
+    final volver = mostrarOpciones
+        ? OutlinedButton(
+            onPressed: alVolver,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFE2E8F0),
+              side: const BorderSide(color: AppColors.navyBorder),
+              backgroundColor: const Color(0xFF111B30),
+              minimumSize: const Size(44, 44),
+              maximumSize: const Size(44, 44),
+              padding: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+            ),
+            child: const Icon(Icons.arrow_back, size: 20, semanticLabel: 'Volver al Dashboard'),
+          )
+        : OutlinedButton.icon(
+            onPressed: alVolver,
+            icon: const Icon(Icons.arrow_back, size: 16),
+            label: const Text('Volver'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFFE2E8F0),
+              side: const BorderSide(color: AppColors.navyBorder),
+              backgroundColor: const Color(0xFF111B30),
+              minimumSize: const Size(0, 44),
+              textStyle: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(11)),
+            ),
+          );
+    return Container(
+      width: double.infinity,
+      color: AppColors.navy900,
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              volver,
+              if (mostrarOpciones) ...[
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SelectorMesa(
+                    mesas: mesas,
+                    idMesa: idMesa,
+                    deshabilitado: paraLlevar && sinMesa,
+                    alCambiar: alCambiarMesa,
+                    ancho: null,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (mostrarOpciones) ...[
+            const SizedBox(height: 10),
+            _InterruptorTipo(tipo: tipo, alCambiar: alCambiarTipo, expandido: true),
+            if (paraLlevar)
+              InkWell(
+                onTap: () => alCambiarSinMesa(!sinMesa),
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 8, bottom: 2),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: Checkbox(
+                          value: sinMesa,
+                          onChanged: (v) => alCambiarSinMesa(v ?? false),
+                          activeColor: AppColors.amber,
+                          side: const BorderSide(color: AppColors.textFaint),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Sin mesa',
+                        style: TextStyle(
+                          color: Color(0xFFE2E8F0),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _SelectorMesa extends StatelessWidget {
   const _SelectorMesa({
     required this.mesas,
     required this.idMesa,
     required this.deshabilitado,
     required this.alCambiar,
+    this.ancho = 230,
   });
 
   final List<Mesa> mesas;
@@ -121,13 +222,16 @@ class _SelectorMesa extends StatelessWidget {
   final bool deshabilitado;
   final ValueChanged<int?> alCambiar;
 
+  /// null = ocupa todo el ancho disponible.
+  final double? ancho;
+
   @override
   Widget build(BuildContext context) {
     final valor = mesas.any((m) => m.idMesa == idMesa) ? idMesa : null;
     return Opacity(
       opacity: deshabilitado ? 0.45 : 1,
       child: Container(
-        width: 230,
+        width: ancho,
         height: 44,
         padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
@@ -173,18 +277,22 @@ class _SelectorMesa extends StatelessWidget {
 }
 
 class _InterruptorTipo extends StatelessWidget {
-  const _InterruptorTipo({required this.tipo, required this.alCambiar});
+  const _InterruptorTipo({required this.tipo, required this.alCambiar, this.expandido = false});
   final TipoPedido tipo;
   final ValueChanged<TipoPedido> alCambiar;
+
+  /// true en teléfono: las dos opciones se reparten todo el ancho.
+  final bool expandido;
 
   @override
   Widget build(BuildContext context) {
     Widget opcion(String texto, TipoPedido valor) {
       final activo = tipo == valor;
-      return InkWell(
+      final boton = InkWell(
         onTap: () => alCambiar(valor),
         borderRadius: BorderRadius.circular(9),
         child: Container(
+          alignment: expandido ? Alignment.center : null,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
           decoration: BoxDecoration(
             color: activo ? AppColors.amber : Colors.transparent,
@@ -200,6 +308,7 @@ class _InterruptorTipo extends StatelessWidget {
           ),
         ),
       );
+      return expandido ? Expanded(child: boton) : boton;
     }
 
     return Container(
@@ -210,7 +319,7 @@ class _InterruptorTipo extends StatelessWidget {
         border: Border.all(color: AppColors.navyBorder),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: expandido ? MainAxisSize.max : MainAxisSize.min,
         children: [
           opcion('Presencial', TipoPedido.enMesa),
           opcion('Para Llevar', TipoPedido.paraLlevar),
