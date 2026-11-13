@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/formato.dart';
 import '../../../domain/entities/pedido.dart';
+import '../../../domain/entities/solicitud_cambio.dart';
 import 'boton_confirmable.dart';
 import 'pedido_chips.dart';
 
@@ -27,6 +28,8 @@ class PedidosTabla extends StatelessWidget {
     required this.alVer,
     this.puedeOperar = true,
     this.esGerente = false,
+    this.solicitudes = const {},
+    this.alSolicitar,
   })  : soloSeguimiento = false,
         alCancelar = null;
 
@@ -40,6 +43,8 @@ class PedidosTabla extends StatelessWidget {
   })  : soloSeguimiento = true,
         puedeOperar = false,
         esGerente = false,
+        solicitudes = const {},
+        alSolicitar = null,
         alCambiarEstado = _ignorarEstado,
         alVer = _ignorarPedido;
 
@@ -52,6 +57,12 @@ class PedidosTabla extends StatelessWidget {
 
   /// El gerente puede editar/cancelar también pedidos en preparación o listos (RN-03).
   final bool esGerente;
+
+  /// Última solicitud de cambio de cada pedido (por folio). Solo la usa el mesero.
+  final Map<int, SolicitudCambio> solicitudes;
+
+  /// Mesero: abre el cuadro para solicitar un cambio al gerente. Null = no se ofrece.
+  final ValueChanged<PedidoResumen>? alSolicitar;
   final AlCambiarEstado alCambiarEstado;
   final ValueChanged<PedidoResumen> alEditar;
   final ValueChanged<PedidoResumen> alVer;
@@ -248,6 +259,10 @@ class PedidosTabla extends StatelessWidget {
           ),
           const SizedBox(width: 6),
         ],
+        if (_accionSolicitud(p) case final solicitar?) ...[
+          solicitar,
+          const SizedBox(width: 6),
+        ],
         if (soloSeguimiento && alCancelar != null && p.estado == EstadoPedido.pendiente) ...[
           OutlinedButton.icon(
             onPressed: () => alCancelar!(p),
@@ -300,15 +315,54 @@ class PedidosTabla extends StatelessWidget {
     );
   }
 
-  /// "Editar": mesero y cliente solo en pedidos pendientes (el cliente, solo en los suyos);
-  /// el gerente también en preparación o listos, y ahí puede cancelar (RN-03).
+  /// "Editar": mesero y cliente en pedidos pendientes (el cliente, solo en los suyos); el
+  /// gerente también en preparación o listos. El mesero, en preparación o listos, solo si el
+  /// gerente aprobó su solicitud y la ventana de 10 minutos sigue abierta (RN-03).
   /// La base de datos es la que lo exige de verdad.
   bool _puedeEditar(PedidoResumen p) {
     if (p.estado == EstadoPedido.pendiente) return puedeOperar || soloSeguimiento;
-    if (esGerente) {
-      return p.estado == EstadoPedido.enPreparacion || p.estado == EstadoPedido.listo;
+    if (!_enCocina(p)) return false;
+    if (esGerente) return true;
+    // Mesero: solo con una solicitud aprobada cuya ventana de 10 minutos sigue abierta.
+    return puedeOperar && _autorizado(p);
+  }
+
+  bool _enCocina(PedidoResumen p) =>
+      p.estado == EstadoPedido.enPreparacion || p.estado == EstadoPedido.listo;
+
+  bool _autorizado(PedidoResumen p) => solicitudes[p.folio]?.estaVigente(ahora) ?? false;
+
+  /// Mesero ante un pedido que ya está en cocina: pide el cambio, o espera la respuesta.
+  Widget? _accionSolicitud(PedidoResumen p) {
+    if (!puedeOperar || esGerente || alSolicitar == null || !_enCocina(p) || _autorizado(p)) {
+      return null;
     }
-    return false;
+    if (solicitudes[p.folio]?.estaPendiente ?? false) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          color: AppColors.amberSoft,
+          borderRadius: BorderRadius.circular(9),
+        ),
+        child: const Text(
+          'Solicitud enviada',
+          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Color(0xFF92400E)),
+        ),
+      );
+    }
+    return OutlinedButton.icon(
+      onPressed: () => alSolicitar!(p),
+      icon: const Icon(Icons.edit_note, size: 16),
+      label: const Text('Solicitar cambio'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.textMuted,
+        side: const BorderSide(color: AppColors.border),
+        minimumSize: const Size(0, 34),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(9)),
+      ),
+    );
   }
 }
 

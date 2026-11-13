@@ -319,3 +319,51 @@ final class CocinaRepositoryProvider
 }
 
 String _$cocinaRepositoryHash() => r'924c7193fc98c946655de1c45dd7556dae7341f1';
+
+@ProviderFor(solicitudRepository)
+final solicitudRepositoryProvider = SolicitudRepositoryProvider._();
+
+final class SolicitudRepositoryProvider
+    extends
+        $FunctionalProvider<
+          SolicitudRepository,
+          SolicitudRepository,
+          SolicitudRepository
+        >
+    with $Provider<SolicitudRepository> {
+  SolicitudRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'solicitudRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$solicitudRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<SolicitudRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  SolicitudRepository create(Ref ref) {
+    return solicitudRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(SolicitudRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<SolicitudRepository>(value),
+    );
+  }
+}
+
+String _$solicitudRepositoryHash() =>
+    r'1d77ec579da323af15698bdfdd92032f3957b4cd';

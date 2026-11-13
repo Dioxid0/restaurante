@@ -14,7 +14,7 @@ Una sola sucursal. Diagramas: [modelo-er.webp](modelo-er.webp) y [casos-de-uso.w
 | cliente | Se registra, reserva (CU-10/12/13/14; es el único que reserva y confirma), pide en línea para llevar (CU-11), consulta su pedido (CU-08) |
 | mesero | Registra pedidos en mesa o para llevar (CU-01/02), modifica/cancela (CU-04/05), consulta (CU-08), consulta reservaciones (solo lectura) |
 | chef | Ve comandas (CU-03), actualiza estado (CU-15) |
-| gerente | Todo lo anterior + reporte (CU-07), descuentos/cortesías (CU-09), PIN de autorización |
+| gerente | Todo lo anterior salvo tomar pedidos + reporte (CU-07), descuentos/cortesías (CU-09), aprueba o rechaza las solicitudes de cambio del mesero (RN-03) |
 
 Todos usan el mismo login. El personal entra con `usuario` + contraseña (Supabase Auth; internamente
 `usuario normalizado@restaurante.local`, p. ej. "Juan Pérez" → `juan.perez@restaurante.local`); los clientes, con su correo.
@@ -48,8 +48,14 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 
 ## Reglas de negocio implementadas en la base de datos
 - **RN-03**: pedido que ya no está `pendiente` no se modifica ni cancela libremente.
-  El cliente pierde la opción; el mesero debe llamar `autorizar_con_pin(folio, pin)` (PIN de un gerente,
-  válido 10 min). Toda cancelación crea un registro en `merma_cancelacion` y avisa a cocina.
+  El cliente pierde la opción. **Corrección acordada por el equipo:** el diagrama original pedía el PIN del gerente
+  para el mesero, pero un PIN compartido se puede aprender o prestar. Ahora el mesero **solicita** el cambio
+  (`solicitar_cambio(folio, tipo, motivo)`: modificar o cancelar, con motivo) y el **gerente aprueba o rechaza**
+  desde su propia sesión (`resolver_solicitud(id, aprobar)`). Al aprobar se abre una ventana de **10 minutos** sobre ese
+  pedido (`pedido.autorizado_por` / `autorizacion_hasta`, que ya validaban los triggers y `actualizar_pedido`).
+  Solo se solicita sobre pedidos que ya no están pendientes ni cerrados; una sola solicitud pendiente por pedido; sin PIN.
+  Tabla `solicitud_cambio` (RLS: solo lectura para mesero y gerente; se escribe únicamente con las RPC) y auditada (RNF-04).
+  Toda cancelación crea un registro en `merma_cancelacion` (con el gerente que autorizó) y avisa a cocina.
 - **RN-07**: el cliente solo cancela/modifica una reservación con ≥ 5 horas de anticipación (el gerente no tiene esa restricción; el mesero no modifica ni cancela).
 - **RNF-04**: `bitacora_auditoria` registra quién (user, rol, empleado) insertó/modificó pedidos, detalles, reservaciones, platillos y mesas.
 - **CU-09**: `aplicar_descuento(folio, monto, es_cortesia, motivo)`, solo gerente, sobre el pedido completo. Solo sirve como registro para el reporte.
@@ -76,8 +82,9 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
 - **Mis pedidos (CU-08, cliente):** el Inicio del cliente lista sus pedidos de hoy (Folio, Hora, Estado, Total), todos los estados, de 5 en 5 y en tiempo real, con el botón "Hacer un pedido". Sin filtros ni Mesa/Tipo. Las acciones son **Editar** y **Cancelar**, visibles solo en pedidos `pendiente` (RN-03). Editar abre la misma comanda (siempre para llevar); Cancelar pide el motivo en un cuadro y cancela al instante (también se puede cancelar desde la comanda). Cuando el pedido pasa a preparación el botón desaparece y la base lo rechaza ("pide ayuda al mesero"). La política `pedido_select` ya solo le devuelve los suyos y `actualizar_pedido`/`pedido_antes_update` ya exigían estas reglas; no hizo falta migración.
 - El mismo platillo con la misma nota suma cantidad; con otra nota es un renglón aparte. Notas de hasta 200 caracteres.
 - `actualizar_pedido(folio, tipo, mesa, items)` reemplaza los renglones de forma atómica y avisa **una vez** a cocina.
-  Mismas reglas que RN-03: mesero solo si está `pendiente` (o con PIN autorizado), cliente solo el suyo y `pendiente`.
-  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado). La pantalla del mesero para ingresar el PIN de gerente (`autorizar_con_pin`) **aún no está construida**.
+  Mismas reglas que RN-03: mesero solo si está `pendiente` (o con una solicitud aprobada y vigente), cliente solo el suyo y `pendiente`.
+  El **gerente** edita y cancela en cualquier estado salvo `completado`/`cancelado`; en la Comandería ve "Editar" en pendiente, en preparación y listo (no en entregado).
+- **Solicitudes de cambio (RN-03, app):** el mesero ve "Solicitar cambio" en los pedidos en preparación o listos; elige Modificar o Cancelar, escribe el motivo y la fila queda en "Solicitud enviada". El gerente ve arriba de la Comandería el panel "Solicitudes de cambio pendientes" (mesero, pedido, tipo, motivo) con **Aprobar** / **Rechazar**, y un aviso flotante cuando llega una nueva. Al aprobar, el mesero recibe un aviso, ve "Editar" en ese pedido y tiene 10 minutos para editarlo o cancelarlo; si vence, debe solicitar de nuevo. Un rechazo avisa al mesero y permite volver a solicitar. Código en `features/solicitudes`, repositorio `SolicitudRepository`, migración `20261112200000_solicitudes_de_cambio.sql` (que también quita `autorizar_con_pin` y `establecer_pin`; la tabla `gerente_pin` queda sin uso).
 - Cancelar desde la pantalla de edición exige motivo y crea el registro en `merma_cancelacion`.
 
 ## Reservaciones (diseño propio, simple)
@@ -94,9 +101,9 @@ Usuarios de prueba: ver el encabezado de `supabase/seed.sql`.
   con `p_items = [{id_platillo, cantidad, notas_especiales}]`. No se inserta directo en `pedido`.
 - Cambiar estado / cancelar: `update` sobre `pedido` (cancelar exige `motivo_cancelacion`).
 - Los errores de reglas llegan como `PostgrestException` con mensaje en español listo para mostrar.
-- `empleado` se lee con `select()` normal; el PIN está en otra tabla inaccesible.
+- `empleado` se lee con `select()` normal.
+- Solicitudes de cambio: `rpc('solicitar_cambio', {p_folio, p_tipo, p_motivo})` (mesero) y `rpc('resolver_solicitud', {p_id, p_aprobar})` (gerente).
 - Sin sesión solo se puede leer `platillo` (menú).
 
 ## Pendiente / decisiones abiertas
 - Vistas/funciones del reporte gerencial (CU-07): se definen al ver la pantalla en Figma.
-- Intentos fallidos de PIN no tienen límite (aceptable para el alcance escolar).
