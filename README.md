@@ -202,8 +202,9 @@ La app elige la base **al compilar**, con `--dart-define`; el código no cambia 
 3. Datos iniciales con **contraseñas nuevas** (las del `seed.sql` son públicas, no las uses en la nube):
    ```powershell
    .\scripts\preparar_semilla_nube.ps1
-   Get-Content supabase\seed_nube.local.sql -Raw | Set-Clipboard
+   Get-Content supabase\seed_nube.local.sql -Raw -Encoding UTF8 | Set-Clipboard
    ```
+   (El `-Encoding UTF8` es obligatorio: sin él, Windows PowerShell 5.1 lee el archivo como ANSI y los acentos quedan dañados en la base, por ejemplo «PÃ©rez».)
    Pega el contenido en *SQL Editor* del panel de Supabase y ejecútalo **una sola vez**. Las contraseñas quedan en `credenciales-nube.txt` (ignorado por Git).
 4. Guarda la URL y la llave **pública** (publishable/anon, nunca `service_role` ni `secret`):
    ```powershell
