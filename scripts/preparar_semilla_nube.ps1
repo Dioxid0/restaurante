@@ -75,5 +75,9 @@ Cliente de prueba (entra con su correo):
 [System.IO.File]::WriteAllText((Join-Path (Get-Location) $salidaCred), $cred, (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host "Listo." -ForegroundColor Green
-Write-Host "  1) Abre $salidaSql, copia TODO su contenido y ejecútalo en Supabase -> SQL Editor."
+# Copia la semilla al portapapeles LEYENDO EN UTF-8 (en Windows PowerShell 5.1, Get-Content sin
+# -Encoding lee ANSI y los acentos quedan dañados en la base: "PÃ©rez").
+Get-Content $salidaSql -Raw -Encoding UTF8 | Set-Clipboard
+Write-Host "  1) La semilla ya está en el portapapeles: pégala en Supabase -> SQL Editor y ejecútala UNA vez."
+Write-Host "     (También está en $salidaSql; si la copias a mano usa: Get-Content $salidaSql -Raw -Encoding UTF8 | Set-Clipboard)"
 Write-Host "  2) Tus usuarios y contraseñas están en $salidaCred (guárdalo y no lo subas)."
